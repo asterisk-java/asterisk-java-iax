@@ -19,6 +19,14 @@
     <inceptionYear>2005</inceptionYear>
     <developers>
         <developer>
+            <name>Wolfgang Pichler</name>
+            <id>wpichler</id>
+        </developer>
+        <developer>
+            <name>David Fire</name>
+            <id>dfire</id>
+        </developer>
+        <developer>
             <name>Stefan Reuter</name>
             <id>srt</id>
             <email>srt at users.sourceforge.net</email>

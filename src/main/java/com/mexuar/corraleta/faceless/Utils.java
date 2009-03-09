@@ -24,7 +24,7 @@ public class Utils {
         Object[] args = new Object[] {
             name};
 
-        Object cookie = _face.getWindow().call("getCookie", args);
+        Object cookie = _face.call("getCookie", args);
         if (cookie != null) {
             ret = cookie.toString();
         }
@@ -56,22 +56,6 @@ public class Utils {
         }
         else {
             Log.debug(cl.getName() + " is not signed (has no signers)");
-        }
-    }
-
-    /**
-     * Print to debug the unexpired cookies.
-     */
-    void printCookies14() {
-        /* get all cookies for this document */
-        try {
-            String myCookie = (String) _face.getDocument().getMember("cookie");
-            if (myCookie.length() > 0) {
-                Log.debug("unexpired cookies: " + myCookie);
-            }
-        }
-        catch (Exception e) {
-            Log.warn(e.getMessage());
         }
     }
 
@@ -157,7 +141,7 @@ public class Utils {
             path
         };
 
-        _face.getWindow().call("setCookie", args);
+        _face.call("setCookie", args);
     }
 
     /**
@@ -174,7 +158,7 @@ public class Utils {
             path
         };
 
-        _face.getWindow().call("deleteCookie", args);
+        _face.call("deleteCookie", args);
 
     }
 
@@ -190,5 +174,4 @@ public class Utils {
             printClassStructure(so);
         }
     }
-
 }

@@ -13,24 +13,20 @@
 
 package com.mexuar.corraleta.faceless;
 
-import javax.swing.JApplet;
-import javax.swing.JLabel;
-import javax.swing.Timer;
-import javax.swing.JOptionPane;
-
-import com.mexuar.corraleta.audio.javasound.*;
-import com.mexuar.corraleta.audio.*;
+import com.mexuar.corraleta.audio.AudioInterface;
+import com.mexuar.corraleta.audio.javasound.Audio8k;
+import com.mexuar.corraleta.audio.javasound.AudioProperties;
 import com.mexuar.corraleta.protocol.*;
 import com.mexuar.corraleta.protocol.netse.BinderSE;
 
-import java.security.*;
-import java.net.*;
-import java.awt.event.ActionListener;
+import javax.swing.*;
+import java.applet.Applet;
 import java.awt.event.ActionEvent;
-import netscape.javascript.JSObject;
-
-import java.text.*;
-import java.util.*;
+import java.awt.event.ActionListener;
+import java.lang.reflect.Method;
+import java.net.SocketException;
+import java.security.AccessControlException;
+import java.security.Permission;
 
 /**
  *
@@ -38,7 +34,7 @@ import java.util.*;
  * @author <a href="mailto:ray@westhawk.co.uk">Ray Tran</a>
  * @version $Revision$ $Date$
  */
-abstract public class Faceless
+public class Faceless
     extends JApplet
     implements CallManager, ProtocolEventListener {
 
@@ -48,6 +44,7 @@ abstract public class Faceless
     private boolean isStandalone = false;
     protected String _user = null;
     protected String _pass = null;
+    protected String _host = null;
     private boolean _incoming = false;
     private String _calledNo = "";
     private String _callingNo = null;
@@ -115,7 +112,7 @@ abstract public class Faceless
         try {
             invokeSetup();
             open();
-            Log.debug("binder =" + _bind);
+            Log.debug("binder = " + _bind);
             invokeLoaded();
         }
         catch (AccessControlException ex) {
@@ -133,14 +130,18 @@ abstract public class Faceless
         }
     }
 
+    protected String getVersion() {
+        // TODO fix version detection
+        return "1.0";
+    }
+
     /**
      * Creates the Binder object. It first checks if we've got
      * permission to record.
      *
-     * @param host The astrisk host name
      * @throws SocketException thrown by Binder object
      */
-    protected void openMyHost(String host) throws SocketException {
+    protected void open() throws SocketException {
         // No point creating a new Binder object, when we cannot record.
         // It will only throw a SocketException
         if (!canRecord()) {
@@ -149,7 +150,7 @@ abstract public class Faceless
         else {
             // we assume that the audio props have been set by now
             _audioBase = new Audio8k();
-            _bind = new BinderSE(host, _audioBase);
+            _bind = new BinderSE(_host, _audioBase);
 
             Log.debug("audioIn usable = " + isAudioInUsable()
                       + ", audioOut usable = " + isAudioOutUsable());
@@ -259,6 +260,16 @@ abstract public class Faceless
         _user = user;
     }
 
+    public String getHost()
+    {
+        return _host;
+    }
+
+    public void setHost(String host)
+    {
+        this._host = host;
+    }
+
     public String getAudioIn() {
         return AudioProperties.getInputDeviceName();
     }
@@ -283,7 +294,7 @@ abstract public class Faceless
      * Should be called from javascript setup()
      * It is too late after that!
      *
-     * @param ain String
+     * @param aout String
      */
     public void setAudioOut(String aout) {
         if (aout != null) {
@@ -331,19 +342,14 @@ abstract public class Faceless
         if (_peer == null && _bind != null && _user != null && _pass != null) {
             ActionListener ans = new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
-                    if (isExpired() == false) {
-                        try {
-                            Log.debug("register() _bind = " + _bind);
-                            _bind.register(_user, _pass, _pevl, _incoming);
-                        }
-                        catch (Exception ex) {
-                            Log.warn("register " + ex.getClass().getName() + ": " +
-                                     ex.getMessage());
-                            show("register " + ex.getMessage());
-                        }
-                        showTrialDaysLeft();
-                    } else {
-                        showTrialExpired();
+                    try {
+                        Log.debug("register() _bind = " + _bind);
+                        _bind.register(_user, _pass, _pevl, _incoming);
+                    }
+                    catch (Exception ex) {
+                        Log.warn("register " + ex.getClass().getName() + ": " +
+                                 ex.getMessage());
+                        show("register " + ex.getMessage());
                     }
                 }
             };
@@ -378,14 +384,9 @@ abstract public class Faceless
             if (_peer != null) {
                 Runnable dr = new Runnable() {
                     public void run() {
-                        if (isExpired() == false) {
-                            show("Dialing " + _calledNo);
-                            _call = _peer.newCall(_user, _pass, _calledNo,
-                                                  _callingNo, _callingName);
-                            showTrialDaysLeft();
-                        } else {
-                            showTrialExpired();
-                        }
+                        show("Dialing " + _calledNo);
+                        _call = _peer.newCall(_user, _pass, _calledNo,
+                                              _callingNo, _callingName);
                     }
                 };
                 javax.swing.SwingUtilities.invokeLater(dr);
@@ -395,12 +396,7 @@ abstract public class Faceless
                 // of isExpired()
                 Runnable dr = new Runnable() {
                     public void run() {
-                        if (isExpired() == false) {
-                            show("No peer object, initialise first");
-                            showTrialDaysLeft();
-                        } else {
-                            showTrialExpired();
-                        }
+                        show("No peer object, initialise first");
                     }
                 };
                 javax.swing.SwingUtilities.invokeLater(dr);
@@ -643,7 +639,7 @@ abstract public class Faceless
         if (_call == c) {
             Object[] args = new Object[1];
             args[0] = "" + _call.getHungupCauseCode();
-            Object ret = getWindow().call("hungUp", args);
+            call("hungUp", args);
             _call = null;
         }
     }
@@ -693,7 +689,7 @@ abstract public class Faceless
         }
         Object[] args = new Object[1];
         args[0] = f.getStatus();
-        Object ret = getWindow().call("registered", args);
+        call("registered", args);
         show("registered " + f.getStatus());
     }
 
@@ -712,124 +708,8 @@ abstract public class Faceless
         Object[] args = new Object[2];
         args[0] = "" + b;
         args[1] = "" + roundtrip;
-        Object ret = getWindow().call("hostreachable", args);
+        call("hostreachable", args);
         show("setHostReachable " + b);
-    }
-
-    public void showTrialExpired_Debug() {
-        String trialExpireDate = getExpireDate();
-        DateFormat df = getDateFormat();
-        Date expiryDate = null;
-
-        StringBuffer msg = new StringBuffer();
-
-        msg.append("Host=").append(getHost());
-        msg.append("\n");
-
-        msg.append("Version=").append(getVersion());
-        msg.append("\n");
-
-        msg.append("Trial Expire Date=").append(trialExpireDate);
-        msg.append("\n");
-
-        try {
-            expiryDate = df.parse(trialExpireDate);
-            msg.append("Parsing Expire Date=OK");
-            msg.append("\n");
-        } catch (java.text.ParseException exc) {
-            msg.append("Parsing Expire Date Exc:");
-            msg.append("\n");
-            msg.append("\t").append(exc.getMessage());
-            msg.append("\n");
-        }
-
-        Date now = new Date();
-        msg.append("Today's Date=");
-        msg.append(df.format(now));
-        msg.append("\n");
-
-        int daysLeft = trialDaysLeft();
-        msg.append("#Days left=");
-        msg.append(daysLeft);
-        msg.append("\n");
-
-        boolean isExpired = isExpired();
-        msg.append("isExpired=");
-        msg.append(isExpired);
-        msg.append("\n");
-        msg.append("\n");
-
-        Locale defaultLocal = Locale.getDefault();
-        msg.append("Default Locale=");
-        msg.append(defaultLocal.getDisplayLanguage());
-        msg.append(", ");
-        msg.append(defaultLocal.getISO3Country());
-        msg.append("\n");
-
-        msg.append("Available Locales:");
-        msg.append("\n");
-        Locale[] locales = DateFormat.getAvailableLocales();
-        if (locales != null)
-        {
-            int wrap = 10;
-            int len = locales.length;
-            for (int i=0; i<len; i++)
-            {
-                Locale locale = locales[i];
-                String displayL = locale.getDisplayLanguage();
-                String iso3 = locale.getISO3Country();
-
-                msg.append(displayL);
-                if (iso3.length() > 0)
-                {
-                    msg.append("(");
-                    msg.append(iso3);
-                    msg.append(")");
-                }
-
-                wrap--;
-                if (wrap > 0)
-                {
-                    msg.append(", ");
-                }
-                else
-                {
-                    msg.append("\n\t");
-                    wrap = 10;
-                }
-            }
-        }
-        else
-        {
-            msg.append("\tnull");
-        }
-        msg.append("\n");
-
-
-        JOptionPane.showMessageDialog(null,
-            msg.toString(),
-            "Mexuar Communications - Corraleta SDK",
-            JOptionPane.ERROR_MESSAGE);
-    }
-
-    public void showTrialExpired() {
-        JOptionPane.showMessageDialog(null,
-            "Mexuar Communications - Corraleta SDK 30 day trial version.\n"
-            + "This software is now expired.",
-            "Mexuar Communications - Corraleta SDK",
-            JOptionPane.ERROR_MESSAGE);
-    }
-
-    public void showTrialDaysLeft() {
-        int daysLeft = trialDaysLeft();
-        if (isTrial() == true)
-        {
-            JOptionPane.showMessageDialog(null,
-                "Mexuar Communications - Corraleta SDK 30 day trial version.\n"
-                + "This software will expire in " + daysLeft + " day(s).",
-                "Mexuar Communications - Corraleta SDK",
-            JOptionPane.WARNING_MESSAGE);
-        }
     }
 
     /**
@@ -840,7 +720,7 @@ abstract public class Faceless
      */
     private void invokeLoaded() {
         Object[] args = new Object[0];
-        Object ret = getWindow().call("loaded", args);
+        call("loaded", args);
     }
 
     /**
@@ -853,7 +733,7 @@ abstract public class Faceless
     private void invokeSetup() {
         try {
             Object[] args = new Object[0];
-            Object ret = getWindow().call("setup", args);
+            call("setup", args);
         }
         catch (Throwable any) {
             Log.warn(any.getMessage());
@@ -876,7 +756,7 @@ abstract public class Faceless
         else {
             args[4] = _call.getNearName();
         }
-        Object ret = getWindow().call(target, args);
+        Object ret = call(target, args);
 
         return (ret == null) ? "" : ret.toString();
     }
@@ -1002,22 +882,22 @@ abstract public class Faceless
         return System.getProperty("java.version");
     }
 
-    JSObject getWindow() {
-        return JSObject.getWindow(this);
+    Object call(String name, Object[] args)
+    {
+        try
+        {
+            Class<?> jsObjectClass = Thread.currentThread().getContextClassLoader().loadClass("netscape.javascript.JSObject");
+            Method getWindowMethod = jsObjectClass.getMethod("getWindow", new Class[] { Applet.class });
+            Method callMethod = jsObjectClass.getMethod("call", new Class[] { String.class, Object[].class });
 
+            Object window = getWindowMethod.invoke(null, new Object[] { this });
+            return callMethod.invoke(window, new Object[] { name, args });
+        }
+        catch (Exception e)
+        {
+            Log.warn("Unable to call JavaScript method '" + name + "': " + e.getMessage());
+        }
+
+        return null;
     }
-
-    JSObject getDocument() {
-        return (JSObject) JSObject.getWindow(this).getMember("document");
-    }
-
-    public abstract String getHost();
-    public abstract String getVersion();
-    public abstract boolean isExpired();
-    public abstract boolean isTrial();
-    public abstract int trialDaysLeft();
-    public abstract String getExpireDate();
-    public abstract DateFormat getDateFormat();
-
-    public abstract void open() throws SocketException;
 }
