@@ -12,7 +12,6 @@
 //
 package org.asteriskjava.iax.protocol;
 
-import org.bouncycastle.crypto.digests.*;
 import org.asteriskjava.iax.audio.*;
 import org.asteriskjava.iax.util.*;
 

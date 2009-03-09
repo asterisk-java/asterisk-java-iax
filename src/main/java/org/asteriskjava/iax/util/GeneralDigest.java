@@ -1,13 +1,10 @@
-package org.bouncycastle.crypto.digests;
-
-import org.bouncycastle.crypto.Digest;
+package org.asteriskjava.iax.util;
 
 /**
  * base implementation of MD4 family style digest as outlined in
  * "Handbook of Applied Cryptography", pages 344 - 347.
  */
 public abstract class GeneralDigest
-    implements Digest
 {
     private byte[]  xBuf = new byte[4];
     private int     xBufOff = 0;

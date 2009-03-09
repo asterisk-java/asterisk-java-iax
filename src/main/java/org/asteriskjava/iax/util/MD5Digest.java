@@ -1,6 +1,4 @@
-package org.bouncycastle.crypto.digests;
-
-import org.bouncycastle.crypto.Digest;
+package org.asteriskjava.iax.util;
 
 /**
  * implementation of MD5 as outlined in "Handbook of Applied Cryptography", pages 346 - 347.
