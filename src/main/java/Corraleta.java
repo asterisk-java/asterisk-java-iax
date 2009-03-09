@@ -10,10 +10,7 @@
 //      Mexuar Technologies Ltd
 // TO DO
 //
-import java.net.*;
-import java.text.*;
-import java.util.*;
-import com.mexuar.corraleta.faceless.Faceless;
+import org.asteriskjava.iax.faceless.Faceless;
 
 /**
  * A concrete implementation of the Faceless abstract Applet.
