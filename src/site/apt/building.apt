@@ -1,0 +1,25 @@
+  ---
+  Building with Maven
+  ---
+  Stefan Reuter
+  ---
+  $Id$
+
+Building with Maven
+
+  Retrieve the latest version of Asterisk-Java IAX from SVN:
+
+---
+svn co http://svn.reucon.net/repos/asterisk-java-iax/trunk asterisk-java-iax
+---
+  
+  Then change to the created asterisk-java-iax directory and use Maven2 to
+  build the project
+  
+---
+cd asterisk-java-iax
+mvn install
+---
+
+  This will create the asterisk-java-iax-${VERSION}.jar in the target subdirectory
+  as well as in your local maven repository.

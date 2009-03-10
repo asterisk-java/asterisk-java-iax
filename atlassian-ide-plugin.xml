@@ -1,0 +1,28 @@
+<atlassian-ide-plugin>
+  <project-configuration>
+    <servers>
+      <bamboo>
+        <server-id>10d510c7-303b-4eb7-8c6f-bfe79b882f16</server-id>
+        <name>reucon</name>
+        <url>https://secure.reucon.net/build</url>
+        <use-favourites>false</use-favourites>
+        <bamboo2>true</bamboo2>
+        <plans>
+          <plan key="AJI-DEF" />
+          <plan key="AJI-NIGHTLY" />
+        </plans>
+      </bamboo>
+      <crucible>
+        <server-id>af4ea5dd-39e6-4a0a-99ac-d18be6530ab4</server-id>
+        <name>reucon</name>
+        <url>https://secure.reucon.net/fisheye</url>
+        <isFisheyeInstance>true</isFisheyeInstance>
+      </crucible>
+      <jira>
+        <server-id>e691789c-0e64-480d-9199-02447fe7e925</server-id>
+        <name>reucon.org</name>
+        <url>http://jira.reucon.org</url>
+      </jira>
+    </servers>
+  </project-configuration>
+</atlassian-ide-plugin>

@@ -1,0 +1,77 @@
+  ---
+  Asterisk-Java IAX
+  ---
+  Stefan Reuter
+  ---
+  $Id$
+
+Asterisk-Java IAX
+
+  Asterisk-Java IAX is a Java implementation of the IAX2 protocol as defined in
+  {{{http://www.rfc-editor.org/authors/rfc5456.txt}RFC 5456}}.
+
+  It is based on code developed by Tim Panton of {{{http://www.westhawk.co.uk}Westhawk Ltd}} for
+  {{{http://www.mexuar.com/}Mexuar Communications}} released under GPLv3 in 2008.
+
+* License
+
+  Asterisk-Java IAX is provided under the terms of the 
+  {{{http://www.gnu.org/licenses/gpl.txt}GNU General Public License, Version 3}}.
+  
+* Status
+
+  We plan to release Asterisk-Java IAX 1.0.0 as soon as possible.
+  
+  Ideas for the future include support for additional codecs like Speex and GSM.
+
+* Download
+
+  Official releases and release candidates are available from the our
+  {{{http://maven.reucon.com/public/org/asteriskjava/asterisk-javai-iax/}distribution site}}.
+
+  The
+  {{{http://maven.reucon.com/public-snapshot/org/asteriskjava/asterisk-java-iax/}snapshot distribution site}}
+  hosts the latest snapshot releases.
+  
+  Please feel free to provide any feedback or ask for support via the
+  {{{mail-lists.html}Asterisk-Java users mailing list}}.
+  
+  The latest development version of Asterisk-Java IAX is always available via SVN:
+
++-----------------------------------------------------------------------------+
+  svn co http://svn.reucon.net/repos/asterisk-java-iax/trunk asterisk-java-iax
++-----------------------------------------------------------------------------+
+
+* Requirements
+
+  At runtime Asterisk-Java requires a Java Runtime 
+  Environment (JRE) of at least version 1.5 (J2SE 5.0).
+
+* Related Projects
+
+  {{{https://jain-sip.dev.java.net/}JAIN SIP}} contains RI, TCK, examples, tools for JAIN-SIP-1.2
+  (JSR-32 maintenance release) and an SDP library that conforms to the public release of JSR 141 (JAIN-SDP)
+  interfaces. JAIN-SIP RI is a full implementation of RFC 3261.
+  
+  {{{http://sip-communicator.org/}SIP Communicator}} is an audio/video Internet phone and instant messenger
+  that supports some of the most popular instant messaging and telephony protocols such as SIP, Jabber,
+  AIM/ICQ, MSN, Yahoo! Messenger, Bonjour, IRC, RSS and soon others like IAX.\
+  Available under the GNU Lesser General Public License (LGPL).
+
+* Sponsors
+
+  Thanks to our sponsors:
+
+  * JetBrains for providing a free license of
+    {{{http://www.jetbrains.com/idea/}IntelliJ Idea}}.
+
+  * {{{http://www.atlassian.com/}Atlassian}} for providing a free license of
+    the excellent {{{http://www.atlassian.com/software/jira/}JIRA}} Bug tracker
+    as well as {{{http://www.cenqua.com/clover/}Clover}} and
+    {{{http://www.cenqua.com/fisheye/}FishEye}}.
+
+  * YourKit {{{http://www.yourkit.com/}Java Profiler}}.
+
+* Contact
+
+  You can reach me at <<<stefan.reuter>>> at <<<reucon>>> dot <<<com>>>.
