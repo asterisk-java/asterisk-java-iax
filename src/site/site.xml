@@ -58,7 +58,7 @@
 		</menu>
 		<menu name="Sponsors">
 			<item name="Source Perspective by FishEye"
-				href="http://fisheye.cenqua.com/changelog/asterisk-java/"
+				href="http://fisheye.reucon.org/fisheye/changelog/repos/asterisk-java-iax"
 				img="http://www.cenqua.com/images/fisheyed2.gif" />
 		</menu>
 		${reports}
