@@ -23,4 +23,12 @@ Frequently Asked Questions
 	
     You might also be interested in our {{{http://jira.reucon.org}Bug Tracker}} where you can look for known issues, post new bug reports and submit patches.
         
+* Will Asterisk-Java IAX be included in the Asterisk-Java jar file or will it remain separate?
+
+  Asterisk-Java IAX will remain a separate project for two reasons:
+
+    * One of the main use cases for Asterisk-Java IAX is as an applet, so a small footprint matters
+
+    * Asterisk-Java IAX is released under GPLv3 while Asterisk-Java is released unter Apache License, therefore
+      the two projects can't be merged.
 
