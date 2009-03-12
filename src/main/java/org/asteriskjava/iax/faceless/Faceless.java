@@ -111,8 +111,6 @@ public class Faceless
 
         try {
             invokeSetup();
-            open();
-            Log.debug("binder = " + _bind);
             invokeLoaded();
         }
         catch (AccessControlException ex) {
@@ -339,9 +337,22 @@ public class Faceless
      * @see #registered
      */
     public void register() {
-        if (_peer == null && _bind != null && _user != null && _pass != null) {
+        if (_peer == null && _user != null && _pass != null) {
             ActionListener ans = new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
+                    if (_bind == null)
+                    {
+                        try {
+                            open();
+                            Log.debug("binder = " + _bind);
+                        }
+                        catch (Exception ex) {
+                            Log.warn("register (open) " + ex.getClass().getName() + ": " +
+                                     ex.getMessage());
+                            show("register (open) " + ex.getMessage());
+                        }
+                    }
+
                     try {
                         Log.debug("register() _bind = " + _bind);
                         _bind.register(_user, _pass, _pevl, _incoming);
