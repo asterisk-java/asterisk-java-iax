@@ -1,0 +1,251 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+       "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>IAX Java Applet Demo Site</title>
+<script src="http://java.com/js/deployJava.js"></script>
+<script language="Javascript">
+	function getPhone() {
+		return document.getElementById('phone');
+	}
+	
+	function debug(message) {
+		debugdiv = document.getElementById('debug');
+		debugdiv.innerHTML = debugdiv.innerHTML + message + "<br/>";
+	}
+	
+	function doRegister() {
+		debug("doRegister called");
+		var host = document.getElementById('iaxhost').value;
+		var cnumber = document.getElementById('cnumber').value;
+		var cname = document.getElementById('cname').value;
+		var user = document.getElementById('user').value;
+		var pass = document.getElementById('pass').value;
+		debug("Host: "+host);
+		debug("Calling Number: "+cnumber);
+		debug("Calling Name: "+cname);
+		debug("User: "+user);
+		debug("Secret: *********");
+		phone = getPhone();
+		phone.setHost(host);
+		phone.setCallingNumber(cnumber);
+		phone.setCallingName(cname);
+		phone.setUser(user);
+		phone.setPass(pass);
+		phone.setWantIncoming(true);
+		phone.register();
+	}
+	
+	function doDial() {
+		debug("doDial invoked");
+		phone = getPhone();
+		var number = document.getElementById('number').value;
+		debug("dial "+number+" called");
+		phone.dial(number);
+	}
+	
+	function doHangup() {
+		debug("doHangup invoked");
+		phone = getPhone();
+		phone.hangup();
+	}
+	
+	function setup() {
+		debug("Applet setup");
+		getAudioInDevices();
+		getAudioOutDevices();
+		phone = getPhone();
+		phone.setAudioIn(phone.getAudioInList(0));
+		phone.setAudioOut(phone.getAudioOutList(0));
+	}
+	
+	// Callback functions here
+	function loaded() {
+		debug("Applet loaded");
+	}
+	
+	function registered(status) {
+		debug("Registered callback status: "+status);
+	}
+	
+	function hostreachable(status, roundtrip) {
+		debug("Host reachable message received, status: "+status+", roundtrip: "+roundtrip);
+	}
+	
+	function newCall(inbound, far, near, answered, callingname) {
+		if (inbound == "true") {
+			// new incoming call
+			debug("Incoming call...");
+			debug("Far: "+far);
+			debug("Near: "+near);
+			debug("Answered: "+answered);
+			debug("callingname: "+callingname);
+		} else {
+			// new outbound call
+			debug("Outbound call...");
+			debug("Far: "+far);
+			debug("Near: "+near);
+			debug("Answered: "+answered);
+			debug("callingname: "+callingname);
+		}
+	}
+
+
+	function hungUp(causecode) {
+		debug("Hungup, CauseCode: "+causecode);
+	}
+
+
+	function ringing(inbound, far, near, answered, callingname) {
+		if (inbound == "true") {
+			// new incoming call
+			debug("Incoming ringing...");
+			debug("Far: "+far);
+			debug("Near: "+near);
+			debug("Answered: "+answered);
+			debug("callingname: "+callingname);
+		} else {
+			// new outbound call
+			debug("Outbound ringing...");
+			debug("Far: "+far);
+			debug("Near: "+near);
+			debug("Answered: "+answered);
+			debug("callingname: "+callingname);
+		}
+	}
+	
+	
+	function answered(inbound, far, near, answered, callingname) {
+		if (inbound == "true") {
+			// new incoming call
+			debug("Incoming answered...");
+			debug("Far: "+far);
+			debug("Near: "+near);
+			debug("Answered: "+answered);
+			debug("callingname: "+callingname);
+		} else {
+			// new outbound call
+			debug("Outbound answered...");
+			debug("Far: "+far);
+			debug("Near: "+near);
+			debug("Answered: "+answered);
+			debug("callingname: "+callingname);
+		}
+	}
+	
+	function getAudioInDevices() {
+		phone = getPhone();
+		devices = phone.getAudioInListLen();
+		for(var i=0;i<devices;i++) {
+			debug("Audio In Device: "+phone.getAudioInList(i));
+		}
+		debug("Current Audio In Device: "+phone.getAudioIn());
+	}
+	
+	function getAudioOutDevices() {
+		phone = getPhone();
+		devices = phone.getAudioOutListLen();
+		for(var i=0;i<devices;i++) {
+			debug("Audio Out Device: "+phone.getAudioOutList(i));
+		}
+		debug("Current Audio Out Device: "+phone.getAudioOut());
+	}
+</script>
+</head>
+<body>
+
+<h1>Here you can test the IAX Java Applet</h1>
+
+<p>You will need your own IAX Account to test the applet - i do not provide one for you...</p>
+
+<script language="Javascript">
+	var attributes = {
+		codebase:'http://maven.reucon.com/public-snapshot/org/asteriskjava/asterisk-java-iax/1.0.0-SNAPSHOT/',
+		code:'org.asteriskjava.iax.faceless.Faceless.class',
+		archive:'asterisk-java-iax-1.0.0-20090312.053826-11.jar',
+		width:300, height:100,
+		id:'phone'
+	};
+	var parameters = {debug:9} ;
+	var version = '1.6' ;
+	deployJava.runApplet(attributes, parameters, version);
+</script>
+
+<div id="debug" style="top:0px;left:0px;width:500px;height:200px;border-width:1px;border-style:solid;overflow:auto;">
+</div>
+<form>
+	IAX Host: <input type="text" id="iaxhost"/><br/>
+	Calling Number: <input type="text" id="cnumber"/><br/>
+	Calling Name: <input type="text" id="cname"/><br/>
+	Username: <input type="text" id="user"/><br/>
+	Secret: <input type="password" id="pass"/><br/>
+	<input type="button" id="register" value="Register" onClick="javascript:doRegister();"/><br/><br/>
+	
+	Number to dial: <input type="text" id="number"/>
+	<input type="button" id="dial" value="Dial now" onClick="javascript:doDial();"/><br/>
+	<input type="button" id="hangup" value="Hangup" onClick="javascript:doHangup();"/><br/>
+	
+	
+</form>
+<hr/>
+<div>
+	<h2>Callback functions</h2>
+	<ul>
+		<li>setup</li>
+			<div>Callback on applet setup - set audio in and out device here</div>
+		<li>loaded</li>
+			<div>Called after applet is ready</div>
+		<li>registered(status)</li>
+			<div>Gets called on register events (new register, reregister, register failed)</div>
+		<li>hostreachable(status, roundtrip)</li>
+			<div>Callback for hostreachable messages (qualify) - does not work for me</div>
+		<li>newCall(inbound, far, near, answered, callingname)</li>
+			<div>Callback for a new call setup</div>
+		<li>hungUp(causecode)</li>
+			<div>Hangup callback - with the cause code</div>
+		<li>ringing(inbound, far, near, answered, callingname)</li>
+			<div>It's ringing - no built in ringer !</div>
+		<li>answered(inbound, far, near, answered, callingname)</li>
+			<div>Call got answered</div>
+	</ul>
+	<hr/>
+	<h2>Exported functions</h2>
+	<ul>
+		<li>setHost(host)</li>
+			<div>Set the host to connect to with the iax applet</div>
+		<li>setCallingNumber(cnumber)</li>
+			<div>do set the calling number to cnumber</div>
+		<li>setCallingName(cname)</li>
+			<div>do set the calling name to cname</div>
+		<li>setUser(user)</li>
+			<div>do set username which should get used on register</div>
+		<li>setPass(pass)</li>
+			<div>do set password which should get used on register</div>
+		<li>setWantIncoming(true)</li>
+			<div>WantIncoming=true - register with the server and receive inbound calls</div>
+		<li>register()</li>
+			<div>do register with the server</div>
+		<li>dial(number)</li>
+			<div>dial the number number</div>
+		<li>hangup()</li>
+			<div>Hangup the current call</div>
+		<li>setAudioIn(device)</li>
+			<div>Set the audioin device (you have to use the name of the audio device, have to get done in the setup callback)</div>
+		<li>setAudioOut(device)</li>
+			<div>Set the audioout device (you have to use the name of the audio device, have to get done in the setup callback)</div>
+		<li>getAudioInListLen</li>
+			<div>Returns the length of the audio in list (number of available audio in devices)</div>
+		<li>getAudioInList(nr)</li>
+			<div>Returns the devicename of the nr device in the audioin list</div>
+		<li>getAudioIn</li>
+			<div>Returns the current choosen audio in device</div>
+		<li>getAudioOutListLen</li>
+			<div>Returns the length of the audio out list (number of available audio out devices)</div>
+		<li>getAudioOutList(nr)</li>
+			<div>Returns the devicename of the nr device in the audioout list</div>
+		<li>getAudioOut</li>
+			<div>Returns the current choosen audio out device</div>
+	</ul>
+</div>
+</body>
+</html>

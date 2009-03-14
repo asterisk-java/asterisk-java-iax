@@ -13,6 +13,9 @@ Asterisk-Java IAX
   It is based on code developed by Tim Panton of {{{http://www.westhawk.co.uk}Westhawk Ltd}} for
   {{{http://www.mexuar.com/}Mexuar Communications}} released under GPLv3 in 2008.
 
+  For now we have included a {{{demo.html}small demo page}} by Wolfgang that shows how to make use
+  of the applet and access it from JavaScript.
+
 * License
 
   Asterisk-Java IAX is provided under the terms of the 
