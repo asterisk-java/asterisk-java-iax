@@ -897,7 +897,7 @@ public class Faceless
     {
         try
         {
-            Class<?> jsObjectClass = Thread.currentThread().getContextClassLoader().loadClass("netscape.javascript.JSObject");
+            Class jsObjectClass = Thread.currentThread().getContextClassLoader().loadClass("netscape.javascript.JSObject");
             Method getWindowMethod = jsObjectClass.getMethod("getWindow", new Class[] { Applet.class });
             Method callMethod = jsObjectClass.getMethod("call", new Class[] { String.class, Object[].class });
 
