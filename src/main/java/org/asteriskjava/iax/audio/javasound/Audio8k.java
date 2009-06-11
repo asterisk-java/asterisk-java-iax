@@ -1197,10 +1197,7 @@ public class Audio8k
      * @return Description of the Returned Value
      */
     public Integer supportedCodecs() {
-        int sup = //VoiceFrame.ALAW_BIT |
-            VoiceFrame.ULAW_BIT
-            // | VoiceFrame.LIN16_BIT
-            ;
+        int sup = VoiceFrame.ALAW_BIT | VoiceFrame.ULAW_BIT | VoiceFrame.LIN16_BIT;
 
         return new Integer(sup);
     }
@@ -1213,7 +1210,9 @@ public class Audio8k
      */
     public String codecPrefString() {
         char[] prefs = {
-            VoiceFrame.ULAW_NO //, VoiceFrame.LIN16_NO //, VoiceFrame.ALAW_NO
+            VoiceFrame.ULAW_NO,
+            VoiceFrame.LIN16_NO,
+            VoiceFrame.ALAW_NO
         };
         String ret = "";
         for (int i = 0; i < prefs.length; i++) {
