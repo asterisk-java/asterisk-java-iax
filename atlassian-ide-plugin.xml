@@ -20,9 +20,14 @@
       </crucible>
       <jira>
         <server-id>e691789c-0e64-480d-9199-02447fe7e925</server-id>
-        <name>reucon.org</name>
-        <url>http://jira.reucon.org</url>
+        <name>reucon</name>
+        <url>https://secure.reucon.net/issues</url>
       </jira>
     </servers>
+    <default-crucible-server>af4ea5dd-39e6-4a0a-99ac-d18be6530ab4</default-crucible-server>
+    <default-fisheye-server>af4ea5dd-39e6-4a0a-99ac-d18be6530ab4</default-fisheye-server>
+    <default-fisheye-repo>repos</default-fisheye-repo>
+    <fisheye-project-path>asterisk-java-iax/trunk</fisheye-project-path>
+    <default-jira-server>e691789c-0e64-480d-9199-02447fe7e925</default-jira-server>
   </project-configuration>
 </atlassian-ide-plugin>
