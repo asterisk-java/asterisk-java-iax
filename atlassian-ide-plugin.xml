@@ -4,7 +4,7 @@
       <bamboo>
         <server-id>10d510c7-303b-4eb7-8c6f-bfe79b882f16</server-id>
         <name>reucon</name>
-        <url>https://secure.reucon.net/build</url>
+        <url>https://build.reucon.com</url>
         <use-favourites>false</use-favourites>
         <bamboo2>true</bamboo2>
         <plans>
@@ -15,13 +15,13 @@
       <crucible>
         <server-id>af4ea5dd-39e6-4a0a-99ac-d18be6530ab4</server-id>
         <name>reucon</name>
-        <url>https://secure.reucon.net/fisheye</url>
+        <url>https://fisheye.reucon.com</url>
         <isFisheyeInstance>true</isFisheyeInstance>
       </crucible>
       <jira>
         <server-id>e691789c-0e64-480d-9199-02447fe7e925</server-id>
         <name>reucon</name>
-        <url>https://secure.reucon.net/issues</url>
+        <url>https://issues.reucon.com</url>
       </jira>
     </servers>
     <default-crucible-server>af4ea5dd-39e6-4a0a-99ac-d18be6530ab4</default-crucible-server>
