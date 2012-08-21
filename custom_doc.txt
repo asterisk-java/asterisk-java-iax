@@ -7,8 +7,6 @@ how to self-sign the jar:
  
  jarsigner -keystore keystore_file file_to_sign.jar jdc
  
- jarsigner -keystore testKeys file_to_sign.jar jdc
-
  (or maybe use some maven magic)
 
 note to self:
