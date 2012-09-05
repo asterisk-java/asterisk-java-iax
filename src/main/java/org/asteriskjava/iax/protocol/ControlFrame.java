@@ -115,6 +115,13 @@ public class ControlFrame extends FullFrame {
         sendMe(this.EMPTY);
     }
 
+    public void sendRinging(){
+        _subclass = this.RINGING;
+        Log.debug("Sending Ringing");
+        sendMe(this.EMPTY);
+        _call.setRinging(true);
+    }
+
 
     /**
      * Logs this frame.

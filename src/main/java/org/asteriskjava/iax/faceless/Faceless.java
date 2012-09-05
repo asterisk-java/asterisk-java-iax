@@ -524,7 +524,7 @@ public class Faceless
                 if (_call != null && _call.getIsInbound()) {
                     Runnable ans = new Runnable() {
                         public void run() {
-                            _call.answer();
+                            _call.ringing();
                         }
                     };
                     javax.swing.SwingUtilities.invokeLater(ans);
