@@ -1,29 +1,13 @@
-// NAME
-//      $RCSfile: ProtocolControlFrameNew.java,v $
-// DESCRIPTION
-//      [given below in javadoc format]
-// DELTA
-//      $Revision$
-// CREATED
-//      $Date$
-// COPYRIGHT
-//      Mexuar Technologies Ltd
-// TO DO
-//
+
 package org.asteriskjava.iax.protocol;
 
-import org.asteriskjava.iax.audio.AudioInterface;
+
+import org.asteriskjava.iax.audio.javasound.AudioInterface;
 
 /**
  * Special cases for outbound 'New' messages.
- *
- * @author <a href="mailto:thp@westhawk.co.uk">Tim Panton</a>
- * @version $Revision$ $Date$
  */
 class ProtocolControlFrameNew extends ProtocolControlFrame {
-
-    private final static String version_id =
-            "@(#)$Id$ Copyright Mexuar Technologies Ltd";
 
 
     /**
@@ -35,7 +19,7 @@ class ProtocolControlFrameNew extends ProtocolControlFrame {
     public ProtocolControlFrameNew(Call p0) {
         super(p0);
         _dCall = 0;
-        _subclass = this.NEW;
+        _subclass = ProtocolControlFrameNew.NEW;
         this.setTimestampVal(0);
         _call.resetClock();
     }
@@ -57,6 +41,7 @@ class ProtocolControlFrameNew extends ProtocolControlFrame {
      *
      * @return true if NEW, false otherwise
      */
+    @Override
     public boolean isANew() {
         return true;
     }
@@ -65,10 +50,10 @@ class ProtocolControlFrameNew extends ProtocolControlFrame {
     /**
      * Sends this NEW message.
      *
-     * @param cno The source call number
-     * @param username The username (sent in IE)
-     * @param calledNo The number we're calling (sent in IE)
-     * @param callingNo Number/extension we call from (sent in IE)
+     * @param cno         The source call number
+     * @param username    The username (sent in IE)
+     * @param calledNo    The number we're calling (sent in IE)
+     * @param callingNo   Number/extension we call from (sent in IE)
      * @param callingName Name of the person calling (sent in IE)
      */
     /*
@@ -96,9 +81,9 @@ class ProtocolControlFrameNew extends ProtocolControlFrame {
                         String callingNo, String callingName) {
 
         Log.debug("ProtocolControlFrameNew.sendNew: calledNo=" + calledNo
-                  + ", callingNo=" + callingNo
-                  + ", callingName=" + callingName
-                  + ", username=" + username);
+                + ", callingNo=" + callingNo
+                + ", callingName=" + callingName
+                + ", username=" + username);
         _sCall = cno.charValue();
         _iseq = _call.getIseq();
         _oseq = _call.getOseqInc();
@@ -110,10 +95,11 @@ class ProtocolControlFrameNew extends ProtocolControlFrame {
         ie.username = username;
         AudioInterface a = _call.getAudioFace();
         int format = a.supportedCodecs().intValue();
-        ie.format = new Integer(format);
-        ie.version = new Integer(2);
+        ie.format = VoiceFrame.GSM_BIT;
+        ie.version = Integer.valueOf(2);
         ie.codec_prefs = a.codecPrefString().getBytes();
- //       ie.putIaxVar("foobar","724024");
+        ie.capability = Integer.valueOf(format);
+        //       ie.putIaxVar("foobar","724024");
         Log.debug("Sending initial NEW");
         sendMe(ie);
     }
@@ -126,6 +112,7 @@ class ProtocolControlFrameNew extends ProtocolControlFrame {
      * @param ack The ack frame
      * @see Call#gotAckToNew(FullFrame)
      */
+    @Override
     void commit(FullFrame ack) {
         if (this._call != null) {
             _call.gotAckToNew(ack);

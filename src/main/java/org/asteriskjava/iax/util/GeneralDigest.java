@@ -1,42 +1,38 @@
 package org.asteriskjava.iax.util;
 
+
 /**
  * base implementation of MD4 family style digest as outlined in
  * "Handbook of Applied Cryptography", pages 344 - 347.
  */
-public abstract class GeneralDigest
-{
-    private byte[]  xBuf = new byte[4];
-    private int     xBufOff = 0;
+public abstract class GeneralDigest {
+    private byte[] xBuf = new byte[4];
+    private int xBufOff = 0;
 
-    private long    byteCount;
+    private long byteCount;
 
-	/**
-	 * Standard constructor
-	 */
-	protected GeneralDigest()
-	{
-	}
+    /**
+     * Standard constructor
+     */
+    protected GeneralDigest() {
+    }
 
-	/**
-	 * Copy constructor.  We are using copy constructors in place
-	 * of the Object.clone() interface as this interface is not
-	 * supported by J2ME.
-	 */
-	protected GeneralDigest(GeneralDigest t)
-	{
-		System.arraycopy(t.xBuf, 0, xBuf, 0, t.xBuf.length);
-		xBufOff = t.xBufOff;
-		byteCount = t.byteCount;
-	}
+    /**
+     * Copy constructor.  We are using copy constructors in place
+     * of the Object.clone() interface as this interface is not
+     * supported by J2ME.
+     */
+    protected GeneralDigest(GeneralDigest t) {
+        System.arraycopy(t.xBuf, 0, xBuf, 0, t.xBuf.length);
+        xBufOff = t.xBufOff;
+        byteCount = t.byteCount;
+    }
 
     public void update(
-        byte in)
-    {
+            byte in) {
         xBuf[xBufOff++] = in;
 
-        if (xBufOff == xBuf.length)
-        {
+        if (xBufOff == xBuf.length) {
             processWord(xBuf, 0);
             xBufOff = 0;
         }
@@ -45,15 +41,13 @@ public abstract class GeneralDigest
     }
 
     public void update(
-        byte[]  in,
-        int     inOff,
-        int     len)
-    {
+            byte[] in,
+            int inOff,
+            int len) {
         //
         // fill the current word
         //
-        while ((xBufOff != 0) && (len > 0))
-        {
+        while ((xBufOff != 0) && (len > 0)) {
             update(in[inOff]);
 
             inOff++;
@@ -63,8 +57,7 @@ public abstract class GeneralDigest
         //
         // process whole words.
         //
-        while (len > 4)
-        {
+        while (len > 4) {
             processWord(in, inOff);
 
             inOff += 4;
@@ -75,8 +68,7 @@ public abstract class GeneralDigest
         //
         // load in the remainder.
         //
-        while (len > 0)
-        {
+        while (len > 0) {
             update(in[inOff]);
 
             inOff++;
@@ -84,18 +76,16 @@ public abstract class GeneralDigest
         }
     }
 
-    public void finish()
-    {
-        long    bitLength = (byteCount << 3);
+    public void finish() {
+        long bitLength = (byteCount << 3);
 
         //
         // add the pad bytes.
         //
-        update((byte)128);
+        update((byte) 128);
 
-        while (xBufOff != 0)
-        {
-            update((byte)0);
+        while (xBufOff != 0) {
+            update((byte) 0);
         }
 
         processLength(bitLength);
@@ -103,8 +93,7 @@ public abstract class GeneralDigest
         processBlock();
     }
 
-    public void reset()
-    {
+    public void reset() {
         byteCount = 0;
 
         xBufOff = 0;

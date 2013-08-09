@@ -1,32 +1,21 @@
-// NAME
-//      $RCSfile: ProtocolControlFrame.java,v $
-// DESCRIPTION
-//      [given below in javadoc format]
-// DELTA
-//      $Revision$
-// CREATED
-//      $Date$
-// COPYRIGHT
-//      Mexuar Technologies Ltd
-// TO DO
-//
 package org.asteriskjava.iax.protocol;
 
-import org.asteriskjava.iax.audio.*;
-import org.asteriskjava.iax.util.*;
+
+import org.asteriskjava.iax.audio.javasound.AudioInterface;
+import org.asteriskjava.iax.util.ByteBuffer;
+
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * Representation of the IAX2 protocol control frame, also known as an
  * IAX Frame in the draft.
  *
  * @author <a href="mailto:thp@westhawk.co.uk">Tim Panton</a>
- * @version $Revision$ $Date$
+ * @version $Revision: 1.31 $ $Date: 2006/11/16 14:23:31 $
  */
 public class ProtocolControlFrame
-    extends FullFrame {
-
-    private final static String version_id =
-        "@(#)$Id$ Copyright Mexuar Technologies Ltd";
+        extends FullFrame {
 
     final static int NEW = 1; //Initiate a new call
     final static int PING = 2; //Ping request
@@ -63,44 +52,45 @@ public class ProtocolControlFrame
     final static int UNSUPPORT = 33; //Unsupported message
     final static int TRANSFER = 34; //Remote transfer request
     final static String controlText[] = {
-        "ZERO",
-        "Initiate a new call",
-        "Ping request",
-        "Ping or poke reply",
-        "Acknowledgement",
-        "Initiate call teardown",
-        "Reject",
-        "Accepted",
-        "Authentication request",
-        "Authentication reply",
-        "Invalid call",
-        "Lag request",
-        "Lag reply",
-        "Registration request",
-        "Registration authenticate",
-        "Registration acknowledgement",
-        "Registration reject",
-        "Registration release",
-        "Video/Voice retransmit request",
-        "Dialplan request",
-        "Dialplan response",
-        "Dial",
-        "Transfer request",
-        "Transfer connect",
-        "Transfer accept",
-        "Transfer ready",
-        "Transfer release",
-        "Transfer reject",
-        "Halt audio/video transmission",
-        "Resume audio/video transmission",
-        "Poke request",
-        "Paging call description",
-        "Message waiting indication",
-        "Unsupported message",
-        "Remote transfer request"
+            "ZERO",
+            "Initiate a new call",
+            "Ping request",
+            "Ping or poke reply",
+            "Acknowledgement",
+            "Initiate call teardown",
+            "Reject",
+            "Accepted",
+            "Authentication request",
+            "Authentication reply",
+            "Invalid call",
+            "Lag request",
+            "Lag reply",
+            "Registration request",
+            "Registration authenticate",
+            "Registration acknowledgement",
+            "Registration reject",
+            "Registration release",
+            "Video/Voice retransmit request",
+            "Dialplan request",
+            "Dialplan response",
+            "Dial",
+            "Transfer request",
+            "Transfer connect",
+            "Transfer accept",
+            "Transfer ready",
+            "Transfer release",
+            "Transfer reject",
+            "Halt audio/video transmission",
+            "Resume audio/video transmission",
+            "Poke request",
+            "Paging call description",
+            "Message waiting indication",
+            "Unsupported message",
+            "Remote transfer request"
     };
-
-    /** The information element */
+    /**
+     * The information element
+     */
     private InfoElement _iep;
 
     /**
@@ -115,8 +105,7 @@ public class ProtocolControlFrame
         _iep = new InfoElement(this._data);
         try {
             _iep.parse(this);
-        }
-        catch (IAX2ProtocolException ex) {
+        } catch (IAX2ProtocolException ex) {
             Log.warn(ex.getMessage());
         }
     }
@@ -138,6 +127,10 @@ public class ProtocolControlFrame
     void ack() {
         logInbound();
         switch (this._subclass) {
+            case POKE:
+                Log.debug("Recieved a POKE");
+                sendMyPong();
+                break;
             case PING:
                 sendPong();
                 break;
@@ -146,15 +139,7 @@ public class ProtocolControlFrame
                 sendAck();
                 _call.setPong(true);
                 break;
-            case POKE:
-                Log.debug("Recieved a POKE");
-                sendMyPong();
-                break;
             case ACK:
-                if(_call.isRinging()){
-                    _call.setRinging(false);
-                    _call.answer();
-                }
                 break;
             case AUTHREQ:
                 sendAuthRep();
@@ -171,8 +156,7 @@ public class ProtocolControlFrame
                 sendAck();
                 if (_call.isForReg()) {
                     _call.setRegistered(true);
-                }
-                else {
+                } else {
                     _call.setRegistered(false);
                 }
                 break;
@@ -191,6 +175,7 @@ public class ProtocolControlFrame
                 break;
             case LAGRQ:
                 Log.debug("Sending lag reply");
+                sendAck();
                 sendLagReply();
                 break;
             case ACCEPT:
@@ -198,12 +183,12 @@ public class ProtocolControlFrame
                 sendAck();
                 _call.setAudioFormat(_iep.format);
                 _call.setAccepted(true);
-                _call.setRno(new Character( (char) (0xffff & this._sCall)));
+                _call.setRno(new Character((char) (0xffff & this._sCall)));
 
                 //set Ringing ?
                 break;
             case REJECT:
-                if ( (_iep != null) && (_iep.cause != null)) {
+                if ((_iep != null) && (_iep.cause != null)) {
                     Log.warn("Cause " + _iep.cause);
                 }
                 Log.debug("Sending Ack frame");
@@ -233,7 +218,7 @@ public class ProtocolControlFrame
      * sendTxrej
      */
     private void sendTxrej() {
-        ProtocolControlFrame rej = mkAck(this.TXREJ);
+        ProtocolControlFrame rej = mkAck(ProtocolControlFrame.TXREJ);
         InfoElement nip = new InfoElement();
         nip.causecode = new Integer(29);
         nip.cause = "Facility rejected";
@@ -242,15 +227,13 @@ public class ProtocolControlFrame
 
     /**
      * Sends a hangup (HANGUP).
-     * This method is not very stable on recieving inbound calls with the asterisk 1.4, while
-     * seems to be stable with asterisk 1.8.
      */
     public void sendHangup() {
         _sCall = _call.getLno().charValue();
         _dCall = _call.getRno().charValue();
         _iseq = _call.getIseq();
         _oseq = _call.getOseq();
-        _subclass = this.HANGUP;
+        _subclass = ProtocolControlFrame.HANGUP;
 
         InfoElement ie = new InfoElement();
         ie.causecode = new Integer(16); // Normal call clearing
@@ -263,15 +246,15 @@ public class ProtocolControlFrame
      * username with the refresh time (REGREQ).
      *
      * @param username The username
-     * @param refresh The number of seconds before the registration
-     *      expires
+     * @param refresh  The number of seconds before the registration
+     *                 expires
      */
     void sendRegReq(String username, int refresh) {
         _sCall = _call.getLno().charValue();
         _dCall = 0;
         _iseq = _call.getIseq();
         _oseq = _call.getOseqInc();
-        _subclass = this.REGREQ;
+        _subclass = ProtocolControlFrame.REGREQ;
 
         InfoElement ie = new InfoElement();
         ie.username = username;
@@ -285,7 +268,7 @@ public class ProtocolControlFrame
      * credentials (REGREQ).
      */
     void sendRegReq() {
-        ProtocolControlFrame ack = mkAck(this.REGREQ);
+        ProtocolControlFrame ack = mkAck(ProtocolControlFrame.REGREQ);
         String p = _call.getPassword();
         InfoElement nip = new InfoElement();
         nip.refresh = new Integer(60);
@@ -305,7 +288,7 @@ public class ProtocolControlFrame
         _dCall = 0;
         _iseq = _call.getIseq();
         _oseq = _call.getOseqInc();
-        _subclass = this.REGREL;
+        _subclass = ProtocolControlFrame.REGREL;
 
         InfoElement ie = new InfoElement();
         ie.username = username;
@@ -318,7 +301,7 @@ public class ProtocolControlFrame
      * credentials (REGREL).
      */
     void sendRegRel() {
-        ProtocolControlFrame ack = mkAck(this.REGREL);
+        ProtocolControlFrame ack = mkAck(ProtocolControlFrame.REGREL);
         String p = _call.getPassword();
         InfoElement nip = new InfoElement();
         buildAuthInfoElements(_iep, nip, p);
@@ -328,7 +311,7 @@ public class ProtocolControlFrame
 
     /**
      * Sends a POKE message to test connectivity of a remote IAX peer.
-     *
+     * <p/>
      * <p>
      * It MUST be sent when there is no existing call to the remote
      * endpoint. It MAY also be used to "qualify" a user to a remote
@@ -344,11 +327,35 @@ public class ProtocolControlFrame
         _dCall = 0;
         _iseq = _call.getIseq();
         _oseq = _call.getOseqInc();
-        _subclass = this.POKE;
+        _subclass = ProtocolControlFrame.POKE;
 
         Log.debug("Sending Poke");
         // POKE has no IE
-        sendMe( (InfoElement)null);
+        sendMe((InfoElement) null);
+    }
+
+    void sendQuelch() {
+        _sCall = _call.getLno().charValue();
+        _dCall = 0;
+        _iseq = _call.getIseq();
+        _oseq = _call.getOseqInc();
+        _subclass = ProtocolControlFrame.QUELCH;
+
+        Log.debug("Sending QUELCH");
+
+        sendMe((InfoElement) null);
+    }
+
+    void sendUnQuelch() {
+        _sCall = _call.getLno().charValue();
+        _dCall = 0;
+        _iseq = _call.getIseq();
+        _oseq = _call.getOseqInc();
+        _subclass = ProtocolControlFrame.UNQUELCH;
+
+        Log.debug("Sending UNQUELCH");
+
+        sendMe((InfoElement) null);
     }
 
     /**
@@ -356,8 +363,9 @@ public class ProtocolControlFrame
      *
      * @param inout Additional text to log.
      */
+    @Override
     protected void log(String inout) {
-        StringBuffer bu = new StringBuffer();
+        StringBuilder bu = new StringBuilder();
         bu.append(inout).append(", PCF subClass: ");
         if (_subclass < controlText.length) {
             bu.append(controlText[_subclass]);
@@ -366,12 +374,14 @@ public class ProtocolControlFrame
     }
 
     // Birgit: Why not remove this. It does less than its parent class.
+
     /**
      * arrived is called when a packet arrives. This method is
      * empty.
      *
      * @throws IAX2ProtocolException
      */
+    @Override
     void arrived() throws IAX2ProtocolException {
     }
 
@@ -382,23 +392,23 @@ public class ProtocolControlFrame
      */
     void sendMe(InfoElement ie) {
         ByteBuffer buff = ByteBuffer.allocate(2048);
-        buff.putChar( (char) (0x8000 | _sCall));
+        buff.putChar((char) (0x8000 | _sCall));
         int rd = _dCall;
         if (_retry) {
             rd |= 0x8000;
         }
-        buff.putChar( (char) rd);
+        buff.putChar((char) rd);
         long tst = this.getTimestampVal();
-        tst = ( (0x100000000L & tst) > 0) ? tst - 0x100000000L : tst;
-        buff.putInt( (int) tst);
-        buff.put( (byte) _oseq);
-        buff.put( (byte) _iseq);
-        buff.put( (byte) _frametype);
+        tst = ((0x100000000L & tst) > 0) ? tst - 0x100000000L : tst;
+        buff.putInt((int) tst);
+        buff.put((byte) _oseq);
+        buff.put((byte) _iseq);
+        buff.put((byte) _frametype);
         int sc = _subclass;
         if (_cbit) {
             sc |= 0x80;
         }
-        buff.put( (byte) sc);
+        buff.put((byte) sc);
         if (ie != null) {
             ie.update(buff);
         }
@@ -411,6 +421,7 @@ public class ProtocolControlFrame
      *
      * @param ack The ack frame sent to us
      */
+    @Override
     void commit(FullFrame ack) {
         switch (this._subclass) {
             case HANGUP:
@@ -438,7 +449,7 @@ public class ProtocolControlFrame
         int match = 0;
         Boolean will = null;
         AudioInterface a = _call.getAudioFace();
-        int can = a.supportedCodecs().intValue();
+        //int can = a.supportedCodecs().intValue();
         String cause = "Congestion";
         String ourprefs = a.codecPrefString();
         byte[] theirprefs = _iep.codec_prefs;
@@ -451,7 +462,7 @@ public class ProtocolControlFrame
                 String caps = "";
                 int cbits = cap.intValue();
                 for (int i = 0; i < 20; i++) {
-                    if ( (cbits & (1 << i)) > 0) {
+                    if ((cbits & (1 << i)) > 0) {
                         caps += (char) (56 + i);
                     }
                 }
@@ -469,13 +480,12 @@ public class ProtocolControlFrame
                 for (int i = 0; i < cpr.length; i++) {
                     if (want[j] == cpr[i]) {
                         match = 1 << (cpr[i] - 66);
-                        Log.debug("found codec match " + (char) want[j] +
-                                  " -> " + match);
+                        Log.debug("found codec match " + (char) want[j]
+                                + " -> " + match);
                         break;
-                    }
-                    else {
-                        Log.verb("codec option " + (char) want[j] + " != " +
-                                 (char) cpr[i]);
+                    } else {
+                        Log.verb("codec option " + (char) want[j] + " != "
+                                + (char) cpr[i]);
                     }
                 }
                 if (match != 0) {
@@ -487,11 +497,10 @@ public class ProtocolControlFrame
         if (match != 0) {
             _call.setAudioFormat(new Integer(match));
             will = _call.newCallFrom(_iep.callingNo, _iep.calledNo,
-                                     _iep.callingName,
-                                     _iep.username);
+                    _iep.callingName,
+                    _iep.username);
 
-        }
-        else {
+        } else {
             will = Boolean.FALSE;
             cause = "No compatible codec.";
             Log.debug("codec cap was " + _iep.capability);
@@ -499,30 +508,21 @@ public class ProtocolControlFrame
         }
         if (will != null) {
             if (will.booleanValue()) {
-                _sCall = _call.getLno().charValue();
-                _dCall = _call.getRno().charValue();
-                _iseq = _call.getIseq();
-                _oseq = _call.getOseq();
-                _subclass = this.ACK;
-                sendMe((InfoElement)null);
-                _subclass = this.ACCEPT;
+                ProtocolControlFrame acc = mkAck(ProtocolControlFrame.ACK);
                 InfoElement ie = new InfoElement();
                 ie.format = new Integer(match);
-                sendMe(ie);
+                acc.sendMe(ie);
+                acc = mkAck(ProtocolControlFrame.ACCEPT);
+                ie = new InfoElement();
+                ie.format = new Integer(match);
+                acc.sendMe(ie);
                 Log.debug("we acc'd call format = " + match);
-            }
-            else {
-                _sCall = _call.getLno().charValue();
-                _dCall = _call.getRno().charValue();
-                _iseq = _call.getIseq();
-                _oseq = _call.getOseq();
-                _subclass = this.ACK;
-                sendMe((InfoElement)null);
-                _subclass = this.REJECT;
+            } else {
+                ProtocolControlFrame rej = mkAck(ProtocolControlFrame.REJECT);
                 InfoElement ie = new InfoElement();
                 ie.cause = cause;
                 Log.warn("we rejected call because = " + cause);
-                sendMe(ie); // teardown ?
+                rej.sendMe(ie); // teardown ?
             }
         } // otherwise ignore it - we have seen it before.
     }
@@ -538,8 +538,8 @@ public class ProtocolControlFrame
      * Builds authentication IE. This method is called by sendAuthRep
      * and sendRegReq.
      *
-     * @param iep The original IE
-     * @param nip The new IE
+     * @param iep  The original IE
+     * @param nip  The new IE
      * @param pass The password
      * @see #sendAuthRep
      * @see #sendRegReq
@@ -552,20 +552,18 @@ public class ProtocolControlFrame
         if (_iep.authmethods != null) {
 
             int model = iep.authmethods.intValue();
-            if ( (model & 2) > 0) {
-
-                MD5Digest md = new MD5Digest();
-                byte[] by = _iep.challenge.getBytes();
-                md.update(by, 0, by.length);
-                by = pass.getBytes();
-                md.update(by, 0, by.length);
-                byte[] resp = new byte[16];
-                md.doFinal(resp, 0);
-                String p = Binder.enHex(resp, (Character)null);
-                nip.md5Result = p;
+            if ((model & 2) > 0) {
                 // do md5
-            }
-            else if ( (model & 1) > 0) {
+
+                try {
+                    final MessageDigest digest = MessageDigest.getInstance("MD5");
+                    digest.update(_iep.challenge.getBytes());
+                    digest.update(pass.getBytes());
+                    nip.md5Result = Binder.enHex(digest.digest(), null);
+                } catch (NoSuchAlgorithmException e) {
+                    e.printStackTrace();
+                }
+            } else if ((model & 1) > 0) {
                 // do plaintext
                 nip.md5Result = pass;
             }
@@ -583,7 +581,7 @@ public class ProtocolControlFrame
             String p = _call.getPassword();
             InfoElement nip = new InfoElement();
             buildAuthInfoElements(_iep, nip, p);
-            ProtocolControlFrame ack = mkAck(this.AUTHREP);
+            ProtocolControlFrame ack = mkAck(ProtocolControlFrame.AUTHREP);
             Log.debug("Sending complete AUTHREP");
             ack.sendMe(nip);
             //dump();
@@ -602,8 +600,9 @@ public class ProtocolControlFrame
         _iseq = _call.getIseq();
         _oseq = _call.getOseq();
         _subclass = this.LAGRP;
+
+        sendMe((InfoElement) null);
         Log.debug("Sending LagReply");
-        sendMe( (InfoElement)null);
 
     }
 
@@ -615,16 +614,16 @@ public class ProtocolControlFrame
     private void sendPong() {
         ProtocolControlFrame pong = mkAck(PONG);
         Log.debug("Sending Pong");
-        pong.sendMe( (InfoElement)null);
+        pong.sendMe((InfoElement) null);
     }
 
-    private void sendMyPong(){
+    private void sendMyPong() {
         _sCall = _call.getLno().charValue();
         _dCall = _call.getRno().charValue();
         _iseq = _call.getIseq();
         _oseq = _call.getOseq();
         _subclass = this.ACK;
-        sendMe((InfoElement)null);
+        sendMe((InfoElement) null);
         _subclass = this.PONG;
         InfoElement ie = new InfoElement();
         // ie.rr_jitter = 0;
@@ -635,5 +634,4 @@ public class ProtocolControlFrame
         // ie.rr_ooo = 0;
         sendMe(ie);
     }
-
 }

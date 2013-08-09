@@ -1,34 +1,19 @@
-// NAME
-//      $RCSfile: AbstractAudio.java,v $
-// DESCRIPTION
-//      [given below in javadoc format]
-// DELTA
-//      $Revision$
-// CREATED
-//      $Date$
-// COPYRIGHT
-//      Mexuar Technologies Ltd
-// TO DO
-//
+
 package org.asteriskjava.iax.audio.javasound;
 
-import java.io.*;
-import org.asteriskjava.iax.audio.*;
-import org.asteriskjava.iax.protocol.*;
+import org.asteriskjava.iax.protocol.AudioSender;
+
+import java.io.IOException;
 
 /**
  * Base class for codecs that can convert to and from SLIN
  * It assumes that Audio8k will find and talk to SLIN hardware
  * It assumes that classes that extend it will implement the
  * abstract methods for their own codecs.
- *
- * @version $Revision$ $Date$
  */
 public abstract class AbstractAudio
-    implements AudioInterface {
+        implements AudioInterface {
 
-    private final static String version_id =
-        "@(#)$Id$ Copyright Mexuar Technologies Ltd";
 
     /**
      * Description of the Field
@@ -50,6 +35,7 @@ public abstract class AbstractAudio
      *
      * @return Description of the Returned Value
      */
+    @Override
     public long startRec() {
         return _a8.startRec();
     }
@@ -57,6 +43,7 @@ public abstract class AbstractAudio
     /**
      * Description of the Method
      */
+    @Override
     public void startPlay() {
         _a8.startPlay();
     }
@@ -64,6 +51,7 @@ public abstract class AbstractAudio
     /**
      * Description of the Method
      */
+    @Override
     public void stopRec() {
         _a8.stopRec();
     }
@@ -71,7 +59,7 @@ public abstract class AbstractAudio
     /**
      * Description of the Method
      *
-     * @param in Description of Parameter
+     * @param in  Description of Parameter
      * @param out Description of Parameter
      */
     public abstract void convertFromLin(byte[] in, byte[] out);
@@ -79,7 +67,7 @@ public abstract class AbstractAudio
     /**
      * Description of the Method
      *
-     * @param in Description of Parameter
+     * @param in  Description of Parameter
      * @param out Description of Parameter
      */
     public abstract void convertToLin(byte[] in, byte[] out);
@@ -87,6 +75,7 @@ public abstract class AbstractAudio
     /**
      * Description of the Method
      */
+    @Override
     public void stopPlay() {
         _a8.stopPlay();
     }
@@ -96,14 +85,16 @@ public abstract class AbstractAudio
      *
      * @param buff Description of Parameter
      * @return Description of the Returned Value
-     * @exception IOException Description of Exception
+     * @throws IOException Description of Exception
      */
+    @Override
     public long readWithTime(byte[] buff) throws IOException {
         long ret = _a8.readWithTime(_ibuff);
         convertFromLin(_ibuff, buff);
         return ret;
     }
 
+    @Override
     public long readDirect(byte[] buff) throws IOException {
         long ret = _a8.readDirect(_ibuff);
         convertFromLin(_ibuff, buff);
@@ -113,10 +104,11 @@ public abstract class AbstractAudio
     /**
      * Description of the Method
      *
-     * @param buff Description of Parameter
+     * @param buff      Description of Parameter
      * @param timestamp Description of Parameter
-     * @exception IOException Description of Exception
+     * @throws IOException Description of Exception
      */
+    @Override
     public void write(byte[] buff, long timestamp) throws IOException {
         convertToLin(buff, _obuff);
         _a8.write(_obuff, timestamp);
@@ -127,35 +119,18 @@ public abstract class AbstractAudio
      *
      * @param f Description of Parameter
      */
+    @Override
     public void writeDirect(byte[] f) {
         byte[] tf = new byte[2 * f.length];
         convertToLin(f, tf);
         _a8.writeDirect(tf);
     }
 
-    /**
-     * A unit test for JUnit
-     *
-     * @exception IOException Description of Exception
-     */
-    protected void test() throws IOException {
-        boolean first = true;
-        long start = this.startRec();
-        long stamp = 0;
-        this.startPlay();
-        byte buff[] = new byte[this.getSampSz()];
-        Log.verb("sample size = " + buff.length);
-        for (int i = 0; i < 1000; i++) {
-            long ts = this.readWithTime(buff);
-            Log.verb("ts= " + ts + " stamp =" + stamp);
-            this.write(buff, stamp);
-            stamp += 20;
-        }
-    }
 
     /**
      * startRinging
      */
+    @Override
     public void startRinging() {
         _a8.startRinging();
     }
@@ -163,6 +138,7 @@ public abstract class AbstractAudio
     /**
      * stopRinging
      */
+    @Override
     public void stopRinging() {
         _a8.stopRinging();
     }
@@ -172,6 +148,7 @@ public abstract class AbstractAudio
      *
      * @return The formatBit value
      */
+    @Override
     public abstract int getFormatBit();
 
     /**
@@ -179,39 +156,47 @@ public abstract class AbstractAudio
      *
      * @param as The new audioSender value
      */
-    public void setAudioSender(org.asteriskjava.iax.protocol.AudioSender as) {
+    @Override
+    public void setAudioSender(AudioSender as) {
         _a8.setAudioSender(as);
     }
 
     /**
      * Play an audio Stream,
+     *
      * @param in InputStream
      * @throws IOException
      */
+    @Override
     public void playAudioStream(java.io.InputStream in) throws IOException {
         _a8.playAudioStream(in);
     }
 
     /**
      * produce occasional sample values
+     *
      * @param slis SampleListener
      * @throws IOException
      */
-    public void sampleRecord(SampleListener slis) throws IOException {
-        _a8.sampleRecord(slis);
-    }
 
+
+    @Override
     public Integer supportedCodecs() {
         return _a8.supportedCodecs();
     }
 
+    @Override
     public String codecPrefString() {
         return _a8.codecPrefString();
     }
-    public void cleanUp(){
+
+    @Override
+    public void cleanUp() {
         _a8.cleanUp();
     }
-    public  AudioInterface getByFormat(Integer format){
+
+    @Override
+    public AudioInterface getByFormat(Integer format) {
         return _a8.getByFormat(format);
     }
 }

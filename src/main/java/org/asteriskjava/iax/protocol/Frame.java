@@ -1,46 +1,41 @@
-// NAME
-//      $RCSfile: Frame.java,v $
-// DESCRIPTION
-//      [given below in javadoc format]
-// DELTA
-//      $Revision$
-// CREATED
-//      $Date$
-// COPYRIGHT
-//      Mexuar Technologies Ltd
-// TO DO
-//
+
 package org.asteriskjava.iax.protocol;
 
-import org.asteriskjava.iax.util.*;
+
+import org.asteriskjava.iax.util.ByteBuffer;
+
 /**
  * Base class for all frames
- *
- * @author <a href="mailto:thp@westhawk.co.uk">Tim Panton</a>
- * @version $Revision$ $Date$
  */
 abstract class Frame {
 
-    private final static String version_id =
-            "@(#)$Id$ Copyright Mexuar Technologies Ltd";
 
     final static byte[] EMPTY = new byte[0];
 
-    /** The call object */
+    /**
+     * The call object
+     */
     protected Call _call;
 
-    /** The timestamp */
+    /**
+     * The timestamp
+     */
     protected Long _timestamp;
 
-    /** The F bit */
+    /**
+     * The F bit
+     */
     protected boolean _fullBit;
 
-    /** The source call number */
+    /**
+     * The source call number
+     */
     protected int _sCall;
 
-    /** The data */
+    /**
+     * The data
+     */
     protected ByteBuffer _data;
-
 
 
     /**
@@ -50,7 +45,7 @@ abstract class Frame {
      * @see #setTimestamp(Long)
      */
     void setTimestampVal(long v) {
-        _timestamp = new Long(v);
+        _timestamp = Long.valueOf(v);
     }
 
 
@@ -63,7 +58,6 @@ abstract class Frame {
     void setTimestamp(Long val) {
         _timestamp = val;
     }
-
 
 
     /**

@@ -1,29 +1,13 @@
-// NAME
-//      $RCSfile: VoiceFrame.java,v $
-// DESCRIPTION
-//      [given below in javadoc format]
-// DELTA
-//      $Revision$
-// CREATED
-//      $Date$
-// COPYRIGHT
-//      Mexuar Technologies Ltd
-// TO DO
-//
+
 package org.asteriskjava.iax.protocol;
 
-import java.io.*;
+import java.io.IOException;
 
 /**
  * VoiceFrame - The frame carries voice data.
- *
- * @author <a href="mailto:thp@westhawk.co.uk">Tim Panton</a>
- * @version $Revision$ $Date$
  */
 public class VoiceFrame extends FullFrame {
 
-    private final static String version_id =
-            "@(#)$Id$ Copyright Mexuar Technologies Ltd";
 
     /**
      * G.723.1 index
@@ -203,12 +187,11 @@ public class VoiceFrame extends FullFrame {
     /**
      * ack is called to send any required response.
      */
+    @Override
     void ack() {
         log("got");
         switch (_subclass) {
             case GSM_BIT:
-                Log.warn("Got unwanted Audio format " + _subclass);
-                break;
             case ULAW_BIT:
             case ALAW_BIT:
             case LIN16_BIT:
@@ -227,6 +210,7 @@ public class VoiceFrame extends FullFrame {
      *
      * @param inout Additional text to log
      */
+    @Override
     protected void log(String inout) {
         super.log(inout + " voice frame");
     }
@@ -237,15 +221,15 @@ public class VoiceFrame extends FullFrame {
      *
      * @throws IAX2ProtocolException
      */
+    @Override
     void arrived() throws IAX2ProtocolException {
         int fsz = _call.getFrameSz();
         byte[] bs = new byte[fsz];
         _data.get(bs);
         try {
             _call.fullVoiceFrameRcvd(this.getTimestampVal());
-            _call.audioWrite(bs, this.getTimestampVal() & 0xffff );
-        }
-        catch (IOException ex) {
+            _call.audioWrite(bs, this.getTimestampVal() & 0xffff);
+        } catch (IOException ex) {
             Log.warn(ex.getMessage());
         }
     }
