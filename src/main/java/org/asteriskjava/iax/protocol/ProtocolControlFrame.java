@@ -146,7 +146,15 @@ public class ProtocolControlFrame
                 sendAck();
                 _call.setPong(true);
                 break;
+            case POKE:
+                Log.debug("Recieved a POKE");
+                sendMyPong();
+                break;
             case ACK:
+                if(_call.isRinging()){
+                    _call.setRinging(false);
+                    _call.answer();
+                }
                 break;
             case AUTHREQ:
                 sendAuthRep();
@@ -154,8 +162,7 @@ public class ProtocolControlFrame
             case REGAUTH:
                 if (_call.isForReg()) {
                     sendRegReq();
-                }
-                else {
+                } else {
                     sendRegRel();
                 }
                 break;
@@ -235,12 +242,14 @@ public class ProtocolControlFrame
 
     /**
      * Sends a hangup (HANGUP).
+     * This method is not very stable on recieving inbound calls with the asterisk 1.4, while
+     * seems to be stable with asterisk 1.8.
      */
     public void sendHangup() {
         _sCall = _call.getLno().charValue();
         _dCall = _call.getRno().charValue();
         _iseq = _call.getIseq();
-        _oseq = _call.getOseqInc();
+        _oseq = _call.getOseq();
         _subclass = this.HANGUP;
 
         InfoElement ie = new InfoElement();
@@ -279,6 +288,7 @@ public class ProtocolControlFrame
         ProtocolControlFrame ack = mkAck(this.REGREQ);
         String p = _call.getPassword();
         InfoElement nip = new InfoElement();
+        nip.refresh = new Integer(60);
         buildAuthInfoElements(_iep, nip, p);
         Log.debug("Sending completed RegRequest");
         ack.sendMe(nip);
@@ -489,18 +499,30 @@ public class ProtocolControlFrame
         }
         if (will != null) {
             if (will.booleanValue()) {
-                ProtocolControlFrame acc = mkAck(this.ACCEPT);
+                _sCall = _call.getLno().charValue();
+                _dCall = _call.getRno().charValue();
+                _iseq = _call.getIseq();
+                _oseq = _call.getOseq();
+                _subclass = this.ACK;
+                sendMe((InfoElement)null);
+                _subclass = this.ACCEPT;
                 InfoElement ie = new InfoElement();
                 ie.format = new Integer(match);
-                acc.sendMe(ie);
+                sendMe(ie);
                 Log.debug("we acc'd call format = " + match);
             }
             else {
-                ProtocolControlFrame rej = mkAck(this.REJECT);
+                _sCall = _call.getLno().charValue();
+                _dCall = _call.getRno().charValue();
+                _iseq = _call.getIseq();
+                _oseq = _call.getOseq();
+                _subclass = this.ACK;
+                sendMe((InfoElement)null);
+                _subclass = this.REJECT;
                 InfoElement ie = new InfoElement();
                 ie.cause = cause;
                 Log.warn("we rejected call because = " + cause);
-                rej.sendMe(ie); // teardown ?
+                sendMe(ie); // teardown ?
             }
         } // otherwise ignore it - we have seen it before.
     }
@@ -575,9 +597,13 @@ public class ProtocolControlFrame
      * @see #ack()
      */
     private void sendLagReply() {
-        ProtocolControlFrame ack = mkAck(LAGRP);
+        _sCall = _call.getLno().charValue();
+        _dCall = _call.getRno().charValue();
+        _iseq = _call.getIseq();
+        _oseq = _call.getOseq();
+        _subclass = this.LAGRP;
         Log.debug("Sending LagReply");
-        ack.sendMe( (InfoElement)null);
+        sendMe( (InfoElement)null);
 
     }
 
@@ -590,6 +616,24 @@ public class ProtocolControlFrame
         ProtocolControlFrame pong = mkAck(PONG);
         Log.debug("Sending Pong");
         pong.sendMe( (InfoElement)null);
+    }
+
+    private void sendMyPong(){
+        _sCall = _call.getLno().charValue();
+        _dCall = _call.getRno().charValue();
+        _iseq = _call.getIseq();
+        _oseq = _call.getOseq();
+        _subclass = this.ACK;
+        sendMe((InfoElement)null);
+        _subclass = this.PONG;
+        InfoElement ie = new InfoElement();
+        // ie.rr_jitter = 0;
+        // ie.rr_loss = 0;
+        // ie.rr_pkts = 1;
+        // ie.rr_delay = 40;
+        // ie.rr_dropped = 0;
+        // ie.rr_ooo = 0;
+        sendMe(ie);
     }
 
 }

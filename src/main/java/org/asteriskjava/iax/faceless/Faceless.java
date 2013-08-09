@@ -28,6 +28,9 @@ import java.net.SocketException;
 import java.security.AccessControlException;
 import java.security.Permission;
 
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+
 /**
  *
  *
@@ -101,31 +104,35 @@ public class Faceless
      * When not signed, it is still possible to read its own cookies.
      */
     public void start() {
+        AccessController.doPrivileged(new PrivilegedAction<Integer>(){
+            public Integer run(){
+                Class cl = this.getClass();
 
-        Class cl = this.getClass();
+                Log.setLevel(_debug);
+                Log.warn(cl.getName() + ": bind host = " + getHost() 
+                    + ", version = " + getVersion());
+                _utils.printSigners(cl);
 
-        Log.setLevel(_debug);
-        Log.warn(cl.getName() + ": bind host = " + getHost() 
-            + ", version = " + getVersion());
-        _utils.printSigners(cl);
-
-        try {
-            invokeSetup();
-            invokeLoaded();
-        }
-        catch (AccessControlException ex) {
-            // applet probably isn't signed
-            Permission perm = ex.getPermission();
-            Log.warn("print AccessControlException from new on Binder(): "
-                     + "no " + perm.getName() + " permission");
-            ex.printStackTrace();
-            this.showStatus(ex.getMessage());
-        }
-        catch (Exception ex) {
-            Log.warn("print exception from new on Binder()");
-            ex.printStackTrace();
-            this.showStatus(ex.getMessage());
-        }
+                // try {
+                    invokeSetup();
+                    invokeLoaded();
+                // }
+                // catch (AccessControlException ex) {
+                //     // applet probably isn't signed
+                //     Permission perm = ex.getPermission();
+                //     Log.warn("print AccessControlException from new on Binder(): "
+                //              + "no " + perm.getName() + " permission");
+                //     ex.printStackTrace();
+                //     this.showStatus(ex.getMessage());
+                // }
+                // catch (Exception ex) {
+                //     Log.warn("print exception from new on Binder()");
+                //     ex.printStackTrace();
+                //     this.showStatus(ex.getMessage());
+                // }
+                return 0;
+            }
+        });
     }
 
     protected String getVersion() {
@@ -142,17 +149,27 @@ public class Faceless
     protected void open() throws SocketException {
         // No point creating a new Binder object, when we cannot record.
         // It will only throw a SocketException
-        if (!canRecord()) {
-            show("Can't get access to microphone");
-        }
-        else {
-            // we assume that the audio props have been set by now
-            _audioBase = new Audio8k();
-            _bind = new BinderSE(_host, _audioBase);
+        AccessController.doPrivileged(new PrivilegedAction<Integer>(){
+            public Integer run(){
+                if (!canRecord()) {
+                    show("Can't get access to microphone");
+                }
+                else {
+                    // we assume that the audio props have been set by now
+                    _audioBase = new Audio8k();
+                    try{
+                        _bind = new BinderSE(_host, _audioBase);
+                    }catch (SocketException e){
+                        Log.debug(e.getMessage());
+                        e.printStackTrace();
+                    }
 
-            Log.debug("audioIn usable = " + isAudioInUsable()
-                      + ", audioOut usable = " + isAudioOutUsable());
-        }
+                    Log.debug("audioIn usable = " + isAudioInUsable()
+                              + ", audioOut usable = " + isAudioOutUsable());
+                }
+                return 0;
+            }
+        });
     }
 
     /**
@@ -161,32 +178,43 @@ public class Faceless
      * @todo Wait for the unregister response(s).
      */
     public void stop() {
-        Log.debug("applet stop");
+        AccessController.doPrivileged(new PrivilegedAction<Integer>(){
+            public Integer run(){
+                Log.debug("applet stop");
 
-        // _peer will be stopped either in registred or via _bind
-        if (_peer != null) {
-            unregister();
-        }
-        if (_bind != null) {
-            _bind.stop();
-            _bind = null;
-        }
+                // _peer will be stopped either in registred or via _bind
+                if (_peer != null) {
+                    unregister();
+                }
+                if (_bind != null) {
+                    _bind.stop();
+                    _bind = null;
+                }
+                return 0;
+            }
+        });
     }
 
     /**
      * Unregister from our pbx. This is called in stop().
      */
     private void unregister() {
-        if (_peer != null && _bind != null) {
-            try {
-                Log.debug("unregister() _bind = " + _bind);
-                _bind.unregister(this);
+        final Faceless my_this = this;
+        AccessController.doPrivileged(new PrivilegedAction<Integer>(){
+            public Integer run(){
+                if (_peer != null && _bind != null) {
+                    try {
+                        Log.debug("unregister() _bind = " + _bind);
+                        _bind.unregister(my_this);
+                    }
+                    catch (Exception exc) {
+                        Log.warn("unregister " + exc.getClass().getName() + ": " +
+                                 exc.getMessage());
+                    }
+                }
+                return 0;
             }
-            catch (Exception exc) {
-                Log.warn("unregister " + exc.getClass().getName() + ": " +
-                         exc.getMessage());
-            }
-        }
+        });
     }
 
     /**
@@ -269,7 +297,11 @@ public class Faceless
     }
 
     public String getAudioIn() {
-        return AudioProperties.getInputDeviceName();
+        return AccessController.doPrivileged(new PrivilegedAction<String>(){
+            public String run(){
+                return AudioProperties.getInputDeviceName();
+            }
+        });
     }
 
     /**
@@ -278,14 +310,24 @@ public class Faceless
      *
      * @param ain String
      */
-    public void setAudioIn(String ain) {
-        if (ain != null) {
-            AudioProperties.setInputDeviceName(ain);
-        }
+    public void setAudioIn(String _ain) {
+        final String ain = _ain;
+        AccessController.doPrivileged(new PrivilegedAction<Integer>(){
+            public Integer run(){
+                if (ain != null) {
+                    AudioProperties.setInputDeviceName(ain);
+                }
+                return 0;
+            }
+        });
     }
 
     public String getAudioOut() {
-        return AudioProperties.getOutputDeviceName();
+        return AccessController.doPrivileged(new PrivilegedAction<String>(){
+            public String run(){
+                return AudioProperties.getOutputDeviceName();
+            }
+        });
     }
 
     /**
@@ -294,10 +336,16 @@ public class Faceless
      *
      * @param aout String
      */
-    public void setAudioOut(String aout) {
-        if (aout != null) {
-            AudioProperties.setOutputDeviceName(aout);
-        }
+    public void setAudioOut(String _aout) {
+        final String aout = _aout;
+        AccessController.doPrivileged(new PrivilegedAction<Integer>(){
+            public Integer run(){
+                if (aout != null) {
+                    AudioProperties.setOutputDeviceName(aout);
+                }
+                return 0;
+            }
+        });
     }
 
     /**
@@ -337,40 +385,45 @@ public class Faceless
      * @see #registered
      */
     public void register() {
-        if (_peer == null && _user != null && _pass != null) {
-            ActionListener ans = new ActionListener() {
-                public void actionPerformed(ActionEvent e) {
-                    if (_bind == null)
-                    {
-                        try {
-                            open();
-                            Log.debug("binder = " + _bind);
-                        }
-                        catch (Exception ex) {
-                            Log.warn("register (open) " + ex.getClass().getName() + ": " +
-                                     ex.getMessage());
-                            show("register (open) " + ex.getMessage());
-                        }
-                    }
+        AccessController.doPrivileged(new PrivilegedAction<Integer>(){
+            public Integer run(){
+                if (_peer == null && _user != null && _pass != null) {
+                    ActionListener ans = new ActionListener() {
+                        public void actionPerformed(ActionEvent e) {
+                            if (_bind == null)
+                            {
+                                try {
+                                    open();
+                                    Log.debug("binder = " + _bind);
+                                }
+                                catch (Exception ex) {
+                                    Log.warn("register (open) " + ex.getClass().getName() + ": " +
+                                             ex.getMessage());
+                                    show("register (open) " + ex.getMessage());
+                                }
+                            }
 
-                    try {
-                        Log.debug("register() _bind = " + _bind);
-                        _bind.register(_user, _pass, _pevl, _incoming);
-                    }
-                    catch (Exception ex) {
-                        Log.warn("register " + ex.getClass().getName() + ": " +
-                                 ex.getMessage());
-                        show("register " + ex.getMessage());
-                    }
+                            try {
+                                Log.debug("register() _bind = " + _bind);
+                                _bind.register(_user, _pass, _pevl, _incoming);
+                            }
+                            catch (Exception ex) {
+                                Log.warn("register " + ex.getClass().getName() + ": " +
+                                         ex.getMessage());
+                                show("register " + ex.getMessage());
+                            }
+                        }
+                    };
+                    Timer timer = new Timer(100, ans);
+                    timer.setRepeats(false);
+                    timer.start();
                 }
-            };
-            Timer timer = new Timer(100, ans);
-            timer.setRepeats(false);
-            timer.start();
-        }
-        else {
-            show("can't register");
-        }
+                else {
+                    show("can't register");
+                }
+                return 0;
+            }
+        });
     }
 
     /**
@@ -387,35 +440,41 @@ public class Faceless
      *
      * @param no The number to dial
      */
-    public void dial(String no) {
-        Log.debug("Pressed dial");
-        //_calledNo = cleanUp(no);
-        _calledNo = no;
-        if (_call == null) {
-            if (_peer != null) {
-                Runnable dr = new Runnable() {
-                    public void run() {
-                        show("Dialing " + _calledNo);
-                        _call = _peer.newCall(_user, _pass, _calledNo,
-                                              _callingNo, _callingName);
+    public void dial(String _no) {
+        final String no = _no;
+        AccessController.doPrivileged(new PrivilegedAction<Integer>(){
+            public Integer run(){
+                Log.debug("Pressed dial");
+                //_calledNo = cleanUp(no);
+                _calledNo = no;
+                if (_call == null) {
+                    if (_peer != null) {
+                        Runnable dr = new Runnable() {
+                            public void run() {
+                                show("Dialing " + _calledNo);
+                                _call = _peer.newCall(_user, _pass, _calledNo,
+                                                      _callingNo, _callingName);
+                            }
+                        };
+                        javax.swing.SwingUtilities.invokeLater(dr);
                     }
-                };
-                javax.swing.SwingUtilities.invokeLater(dr);
-            }
-            else {
-                // _peer will be null when register isn't called because
-                // of isExpired()
-                Runnable dr = new Runnable() {
-                    public void run() {
-                        show("No peer object, initialise first");
+                    else {
+                        // _peer will be null when register isn't called because
+                        // of isExpired()
+                        Runnable dr = new Runnable() {
+                            public void run() {
+                                show("No peer object, initialise first");
+                            }
+                        };
+                        javax.swing.SwingUtilities.invokeLater(dr);
                     }
-                };
-                javax.swing.SwingUtilities.invokeLater(dr);
+                }
+                else {
+                    show("No new call, in call already");
+                }
+                return 0;
             }
-        }
-        else {
-            show("No new call, in call already");
-        }
+        });
     }
 
     /**
@@ -430,16 +489,21 @@ public class Faceless
      * </p>
      */
     public void hangup() {
-        Log.debug("Pressed hangup");
-        if (_call != null) {
-            Runnable ans = new Runnable() {
-                public void run() {
-                    _call.hangup();
+        AccessController.doPrivileged(new PrivilegedAction<Integer>(){
+            public Integer run(){
+                Log.debug("Pressed hangup");
+                if (_call != null) {
+                    Runnable ans = new Runnable() {
+                        public void run() {
+                            _call.hangup();
+                        }
+                    };
+                    javax.swing.SwingUtilities.invokeLater(ans);
+                    show("Hangup...");
                 }
-            };
-            javax.swing.SwingUtilities.invokeLater(ans);
-            show("Hangup...");
-        }
+                return 0;
+            }
+        });
     }
 
     /**
@@ -454,22 +518,33 @@ public class Faceless
      * </p>
      */
     public void answer() {
-        Log.debug("Pressed answer");
-        if (_call != null && _call.getIsInbound()) {
-            Runnable ans = new Runnable() {
-                public void run() {
-                    _call.answer();
+        AccessController.doPrivileged(new PrivilegedAction<Integer>(){
+            public Integer run(){
+                Log.debug("Pressed answer");
+                if (_call != null && _call.getIsInbound()) {
+                    Runnable ans = new Runnable() {
+                        public void run() {
+                            _call.ringing();
+                        }
+                    };
+                    javax.swing.SwingUtilities.invokeLater(ans);
+                    show("Answering");
                 }
-            };
-            javax.swing.SwingUtilities.invokeLater(ans);
-            show("Answering");
-        }
+                return 0;
+            }
+        });
     }
 
-    public void sendFirstCharDTMF(String s) {
-        if (s != null) {
-            sendDTMF(s.charAt(0));
-        }
+    public void sendFirstCharDTMF(String _s) {
+        final String s = _s;
+        AccessController.doPrivileged(new PrivilegedAction<Integer>(){
+            public Integer run(){
+                if (s != null) {
+                    sendDTMF(s.charAt(0));
+                }
+                return 0;
+            }
+        });
     }
 
     /**
@@ -484,18 +559,24 @@ public class Faceless
      * </p>
      */
 
-    public void sendDTMF(char d) {
-        final char dd = d;
-        Log.debug("Pressed " + d);
-        if (_call != null) {
-            Runnable dig = new Runnable() {
-                public void run() {
-                    _call.sendDTMF(dd);
+    public void sendDTMF(char _d) {
+        final char d = _d;
+        AccessController.doPrivileged(new PrivilegedAction<Integer>(){
+            public Integer run(){
+                final char dd = d;
+                Log.debug("Pressed " + d);
+                if (_call != null) {
+                    Runnable dig = new Runnable() {
+                        public void run() {
+                            _call.sendDTMF(dd);
+                        }
+                    };
+                    javax.swing.SwingUtilities.invokeLater(dig);
+                    show("Sending DTMF" + dd);
                 }
-            };
-            javax.swing.SwingUtilities.invokeLater(dig);
-            show("Sending DTMF" + dd);
-        }
+                return 0;
+            }
+        });
     }
 
     /**
@@ -510,23 +591,28 @@ public class Faceless
      * </p>
      */
     public void checkHostReachable() {
-        Log.debug("in checkHostReachable()");
-        if (_call == null) {
-            if (_peer != null) {
-                Runnable dr = new Runnable() {
-                    public void run() {
-                        _peer.checkHostReachable();
+        AccessController.doPrivileged(new PrivilegedAction<Integer>(){
+            public Integer run(){
+                Log.debug("in checkHostReachable()");
+                if (_call == null) {
+                    if (_peer != null) {
+                        Runnable dr = new Runnable() {
+                            public void run() {
+                                _peer.checkHostReachable();
+                            }
+                        };
+                        javax.swing.SwingUtilities.invokeLater(dr);
                     }
-                };
-                javax.swing.SwingUtilities.invokeLater(dr);
+                    else {
+                        show("No peer object, initialise first");
+                    }
+                }
+                else {
+                    show("Cannot check whilst in call");
+                }
+                return 0;
             }
-            else {
-                show("No peer object, initialise first");
-            }
-        }
-        else {
-            show("Cannot check whilst in call");
-        }
+        });
     }
 
     /**
@@ -538,10 +624,14 @@ public class Faceless
      * @see #getAudioInListLen()
      */
     public boolean isAudioInAvailable() {
-        if (audioinList == null) {
-            Integer i = getAudioInListLen();
-        }
-        return (audioinList.length > 0);
+        return AccessController.doPrivileged(new PrivilegedAction<Boolean>(){
+            public Boolean run(){
+                if (audioinList == null) {
+                    Integer i = getAudioInListLen();
+                }
+                return (audioinList.length > 0);
+            }
+        });
     }
 
     /**
@@ -549,7 +639,11 @@ public class Faceless
      * Call after start() is finished.
      */
     public boolean isAudioInUsable() {
-        return AudioProperties.isAudioInUsable();
+        return AccessController.doPrivileged(new PrivilegedAction<Boolean>(){
+            public Boolean run(){
+                return AudioProperties.isAudioInUsable();
+            }
+        });
     }
 
     /**
@@ -559,9 +653,13 @@ public class Faceless
      * @return The number of incoming audio devices available
      */
     public Integer getAudioInListLen() {
-        Log.debug("in getAudioListLen()");
-        audioinList = AudioProperties.getMixIn();
-        return new Integer(audioinList.length);
+        return AccessController.doPrivileged(new PrivilegedAction<Integer>(){
+            public Integer run(){
+                Log.debug("in getAudioListLen()");
+                audioinList = AudioProperties.getMixIn();
+                return new Integer(audioinList.length);
+            }
+        });
     }
 
     /**
@@ -596,7 +694,11 @@ public class Faceless
      * Call after start() is finished.
      */
     public boolean isAudioOutUsable() {
-        return AudioProperties.isAudioOutUsable();
+        return AccessController.doPrivileged(new PrivilegedAction<Boolean>(){
+            public Boolean run(){
+                return AudioProperties.isAudioOutUsable();
+            }
+        });
     }
 
     /**
@@ -606,8 +708,12 @@ public class Faceless
      * @return The number of outgoing audio devices available
      */
     public Integer getAudioOutListLen() {
-        audiooutList = AudioProperties.getMixOut();
-        return new Integer(audiooutList.length);
+        return AccessController.doPrivileged(new PrivilegedAction<Integer>(){
+            public Integer run(){
+                audiooutList = AudioProperties.getMixOut();
+                return new Integer(audiooutList.length);
+            }
+        });
     }
 
     /**
@@ -645,14 +751,20 @@ public class Faceless
      * @see #dial(String)
      * @see ProtocolEventListener#hungUp(Call)
      */
-    public void hungUp(Call c) {
-        show("hungup " + c.toString() + ", causecode=" + c.getHungupCauseCode());
-        if (_call == c) {
-            Object[] args = new Object[1];
-            args[0] = "" + _call.getHungupCauseCode();
-            call("hungUp", args);
-            _call = null;
-        }
+    public void hungUp(Call _c) {
+        final Call c = _c;
+        AccessController.doPrivileged(new PrivilegedAction<Integer>(){
+            public Integer run(){
+                show("hungup " + c.toString() + ", causecode=" + c.getHungupCauseCode());
+                if (_call == c) {
+                    Object[] args = new Object[1];
+                    args[0] = "" + _call.getHungupCauseCode();
+                    call("hungUp", args);
+                    _call = null;
+                }
+                return 0;
+            }
+        });
     }
 
     /**
@@ -675,9 +787,15 @@ public class Faceless
      * @see #dial(String)
      * @see ProtocolEventListener#answered(Call)
      */
-    public void answered(Call c) {
-        show("answered " + c.isAnswered());
-        invoke("answered");
+    public void answered(Call _c) {
+        final Call c = _c;
+        AccessController.doPrivileged(new PrivilegedAction<Integer>(){
+            public Integer run(){
+                show("answered " + c.isAnswered());
+                invoke("answered");
+                return 0;
+            }
+        });
     }
 
     /**
@@ -689,19 +807,26 @@ public class Faceless
      * @see #register
      * @see ProtocolEventListener#registered(Friend, boolean)
      */
-    public void registered(Friend f, boolean s) {
-        Log.warn("registered " + s);
-        if (s == true) {
-            _peer = f;
-        }
-        else if (_peer != null) {
-            _peer.stop();
-            _peer = null;
-        }
-        Object[] args = new Object[1];
-        args[0] = f.getStatus();
-        call("registered", args);
-        show("registered " + f.getStatus());
+    public void registered(Friend _f, boolean _s) {
+        final Friend f = _f;
+        final boolean s = _s;
+        AccessController.doPrivileged(new PrivilegedAction<Integer>(){
+            public Integer run(){
+                Log.warn("registered " + s);
+                if (s == true) {
+                    _peer = f;
+                }
+                else if (_peer != null) {
+                    _peer.stop();
+                    _peer = null;
+                }
+                Object[] args = new Object[1];
+                args[0] = f.getStatus();
+                call("registered", args);
+                show("registered " + f.getStatus());
+                return 0;
+            }
+        });
     }
 
     /**
@@ -754,22 +879,27 @@ public class Faceless
     /**
      * Invokes a javascript method.
      */
-    private String invoke(String target) {
-        Object[] args = new Object[5];
-        args[0] = "" + _call.getIsInbound();
-        args[1] = _call.getFarNo();
-        args[2] = _call.getNearNo();
-        args[3] = "" + _call.isAnswered();
+    private String invoke(String _target) {
+        final String target = _target;
+        return AccessController.doPrivileged(new PrivilegedAction<String>(){
+            public String run(){
+                Object[] args = new Object[5];
+                args[0] = "" + _call.getIsInbound();
+                args[1] = _call.getFarNo();
+                args[2] = _call.getNearNo();
+                args[3] = "" + _call.isAnswered();
 
-        if (_call.getIsInbound()) {
-            args[4] = _call.getFarName();
-        }
-        else {
-            args[4] = _call.getNearName();
-        }
-        Object ret = call(target, args);
+                if (_call.getIsInbound()) {
+                    args[4] = _call.getFarName();
+                }
+                else {
+                    args[4] = _call.getNearName();
+                }
+                Object ret = call(target, args);
 
-        return (ret == null) ? "" : ret.toString();
+                return (ret == null) ? "" : ret.toString();
+            }
+        });
     }
 
     /**
@@ -825,19 +955,23 @@ public class Faceless
      * @return True if we can, false if we cannot
      */
     public boolean canRecord() {
-        boolean ret = false;
-        javax.sound.sampled.AudioPermission ap = new javax.sound.sampled.
-            AudioPermission("record");
-        try {
-            java.security.AccessController.checkPermission(ap);
-            ret = true;
-            Log.debug("Have permission to access microphone");
-        }
-        catch (java.security.AccessControlException ace) {
-            Log.debug("Do not have permission to access microphone");
-            Log.warn(ace.getMessage());
-        }
-        return ret;
+        return AccessController.doPrivileged(new PrivilegedAction<Boolean>(){
+            public Boolean run(){
+                boolean ret = false;
+                javax.sound.sampled.AudioPermission ap = new javax.sound.sampled.
+                    AudioPermission("record");
+                try {
+                    java.security.AccessController.checkPermission(ap);
+                    ret = true;
+                    Log.debug("Have permission to access microphone");
+                }
+                catch (java.security.AccessControlException ace) {
+                    Log.debug("Do not have permission to access microphone");
+                    Log.warn(ace.getMessage());
+                }
+                return ret;
+            }
+        });
     }
 
     /**
@@ -869,43 +1003,45 @@ public class Faceless
      * @see #init()
      */
     private void jbInit() throws Exception {
-        String dS = getParameter("debug", "0");
-        try {
-            _debug = Integer.parseInt(dS);
-        }
-        catch (NumberFormatException nfe) {
-            _debug = 9;
-        }
-        String idev = getParameter("audioIn", null);
-        if (idev != null) {
-            AudioProperties.setInputDeviceName(idev);
-        }
-        String odev = getParameter("audioOut", null);
-        if (odev != null) {
-            AudioProperties.setInputDeviceName(odev);
-        }
+        final Faceless my_this = this;
+        AccessController.doPrivileged(new PrivilegedAction<Integer>(){
+            public Integer run(){
+                String dS = getParameter("debug", "0");
+                try {
+                    _debug = Integer.parseInt(dS);
+                }
+                catch (NumberFormatException nfe) {
+                    _debug = 9;
+                }
+                String idev = getParameter("audioIn", null);
+                if (idev != null) {
+                    AudioProperties.setInputDeviceName(idev);
+                }
+                String odev = getParameter("audioOut", null);
+                if (odev != null) {
+                    AudioProperties.setInputDeviceName(odev);
+                }
 
-        lab.setText("hi");
-        this.getContentPane().add(lab);
+                lab.setText("hi");
+                my_this.getContentPane().add(lab);
+                return 0;
+            }
+        });
     }
 
     public String getJavaVersion() {
         return System.getProperty("java.version");
     }
 
-    Object call(String name, Object[] args)
-    {
-        try
-        {
+    Object call(String name, Object[] args){
+        try{
             Class jsObjectClass = Thread.currentThread().getContextClassLoader().loadClass("netscape.javascript.JSObject");
             Method getWindowMethod = jsObjectClass.getMethod("getWindow", new Class[] { Applet.class });
             Method callMethod = jsObjectClass.getMethod("call", new Class[] { String.class, Object[].class });
 
             Object window = getWindowMethod.invoke(null, new Object[] { this });
             return callMethod.invoke(window, new Object[] { name, args });
-        }
-        catch (Exception e)
-        {
+        }catch (Exception e){
             Log.warn("Unable to call JavaScript method '" + name + "': " + e.getMessage());
         }
 

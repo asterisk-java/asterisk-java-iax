@@ -64,7 +64,7 @@ public class BinderSE extends Binder implements Runnable  {
             ;// don't care much
         }
         _host = host;
-        // _lsoc = new DatagramSocket(IAX2SOC);
+        //_lsoc = new DatagramSocket(IAX2SOC);
         _lsoc = new DatagramSocket();
         //_lsoc.setTrafficClass(0x10);
         _listener = new Thread(this, "Binder Listen");

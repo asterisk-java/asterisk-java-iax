@@ -1,0 +1,22 @@
+how to compile: 
+  mvn clean install
+
+how to self-sign the jar: 
+
+ keytool -genkey -keystore keystore_file -alias jdc
+ 
+ jarsigner -keystore keystore_file file_to_sign.jar jdc
+ 
+ (or maybe use some maven magic)
+
+note to self:
+ 
+  this applet will be able to share 
+  device audio with other application 
+  on a linux machine only if you use 
+  java 1.7 plugin. prev version don't 
+  work with pulseaudio and want to access 
+  the device audio in exclusive mode. 
+
+  openjdk don't work well, choppy audio, 
+  missing frame, mr roboto...

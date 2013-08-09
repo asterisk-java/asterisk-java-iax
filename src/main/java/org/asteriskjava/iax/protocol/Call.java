@@ -96,6 +96,8 @@ public class Call
     private long _stampTopWord = 0;
     private long _oldStamp = 0;
 
+    private boolean _ringing = false;
+
     /**
      * The outbound constructor for Call. We know nothing except where
      * to send it.
@@ -841,6 +843,12 @@ public class Call
         this.setAnswered(true);
     }
 
+    public void ringing(){
+        ControlFrame ans = new ControlFrame(this);
+        ans.sendRinging();
+        this.setRinging(true);
+    }
+
     /**
      * Returns the far number.
      *
@@ -898,6 +906,14 @@ public class Call
         }
         _peer.gotRinging(this);
         Log.debug("going to make a remote ringing noise...!");
+    }
+
+    void setRinging(Boolean value){
+        _ringing = value;
+    }
+
+    public Boolean isRinging(){
+        return _ringing;
     }
 
     /**
