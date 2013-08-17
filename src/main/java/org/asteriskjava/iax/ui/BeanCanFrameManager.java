@@ -1,39 +1,15 @@
-// NAME
-//      $RCSfile: BeanCanFrameManager.java,v $
-// DESCRIPTION
-//      [given below in javadoc format]
-// DELTA
-//      $Revision$
-// CREATED
-//      $Date$
-// COPYRIGHT
-//      Mexuar Technologies Ltd
-// TO DO
-//
 
 package org.asteriskjava.iax.ui;
 
-import java.net.*;
-
-import java.awt.event.*;
-
+import org.asteriskjava.iax.audio.javasound.Audio8k;
+import org.asteriskjava.iax.audio.javasound.AudioInterface;
 import org.asteriskjava.iax.protocol.*;
-import org.asteriskjava.iax.protocol.netse.*;
-import org.asteriskjava.iax.audio.AudioInterface;
 
-/**
- * Place to put code specific to the protocol - allowing BeanCanFrame to
- * keep the UI code only
- * @author <a href="mailto:thp@westhawk.co.uk">Tim Panton</a>
- * @version $Revision$ $Date$
- *
- */
+import java.awt.event.ActionEvent;
+import java.net.SocketException;
 
-public class BeanCanFrameManager
-    extends BeanCanFrame
-    implements ProtocolEventListener, CallManager {
-    private static final String version_id =
-        "@(#)$Id$ Copyright Mexuar Technologies Ltd";
+
+public class BeanCanFrameManager extends BeanCanFrame implements ProtocolEventListener, CallManager {
 
     private Call _ca = null;
     private Friend _peer = null;
@@ -52,12 +28,11 @@ public class BeanCanFrameManager
     }
 
     public void start() {
-        this.show();
-        _audioBase = new org.asteriskjava.iax.audio.javasound.Audio8k();
+        this.setVisible(true);
+        _audioBase = new Audio8k();
         try {
             _bind = new BinderSE(_host, _audioBase);
-        }
-        catch (SocketException ex) {
+        } catch (SocketException ex) {
             status.setText(ex.getMessage());
         }
 
@@ -72,8 +47,7 @@ public class BeanCanFrameManager
         _bind = null;
     }
 
-    public BeanCanFrameManager(String username, String password, String host,
-                               boolean isApplet, int level) {
+    public BeanCanFrameManager(String username, String password, String host, boolean isApplet, int level) {
         this(isApplet, level, host);
         _username = username;
         _password = password;
@@ -84,10 +58,9 @@ public class BeanCanFrameManager
             start();
         }
         try {
-            boolean reg = !("callmcom".equals(_password));
-            _bind.register(_username, _password, this, reg);
-        }
-        catch (Exception ex) {
+
+            _bind.register(_username, _password, this, true);
+        } catch (Exception ex) {
             status.setText(ex.getMessage());
         }
     }
@@ -97,22 +70,21 @@ public class BeanCanFrameManager
      *
      * @param c Call
      */
+    @Override
     public void newCall(Call c) {
-        Log.debug("in newCall ");
+        Log.debug("Llamada Entrante ");
         if (_ca == null) {
             _ca = c;
             Log.debug("_ca == null :" + _ca.getStatus());
             this.status.setText(c.getStatus());
             if (_ca.getIsInbound()) {
-                act.setText("Answer");
+                act.setText("Atender");
+            } else {
+                act.setText("Cortar");
             }
-            else {
-                act.setText("Hangup");
-            }
-        }
-        else {
+        } else {
             Log.debug("_ca != null :" + _ca.getStatus());
-            this.status.setText("Ignoring second call");
+            this.status.setText("Ignorando llamada Entrante");
         }
     }
 
@@ -122,20 +94,34 @@ public class BeanCanFrameManager
      * @param f Friend
      * @param s boolean
      */
+    @Override
     public void registered(Friend f, boolean s) {
         _peer = f;
         this.status.setText(_peer.getStatus());
     }
+
+
+    @Override
+    public boolean accept(Call ca) {
+        Log.debug("Aceptada Entrante ");
+        boolean ret = true;
+        if (_ca != null) {
+            ret = false;
+        }
+        return ret;
+    }
+
 
     /**
      * hungUp
      *
      * @param c Call
      */
+    @Override
     public void hungUp(Call c) {
         _ca = null;
-        status.setText("idle");
-        act.setText("Call");
+        status.setText("Disponible");
+        act.setText("Llamar");
     }
 
     /**
@@ -143,6 +129,7 @@ public class BeanCanFrameManager
      *
      * @param c Call
      */
+    @Override
     public void ringing(Call c) {
         status.setText("Ringing");
     }
@@ -154,69 +141,68 @@ public class BeanCanFrameManager
      * @param c Call
      * @see ProtocolEventListener#answered(Call)
      */
+    @Override
     public void answered(Call c) {
-        status.setText("Answered " + c.isAnswered());
+        status.setText("Antendida " + c.isAnswered());
     }
 
     /**
      * Called when it is known whether or not friend can reach its host
      * (PBX).
      *
-     * @param f Friend
-     * @param b Whether friend can reach its host
+     * @param f         Friend
+     * @param b         Whether friend can reach its host
      * @param roundtrip The round trip (ms) of the request
      * @todo implement
      */
+    @Override
     public void setHostReachable(Friend f, boolean b, int roundtrip) {
         Log.warn("setHostReachable " + b + ", roundtrip " + roundtrip);
     }
 
     /**
      */
+    @Override
     void dialString_actionPerformed(ActionEvent e) {
         if (_ca == null) {
             if (_peer != null) {
                 String num = dialString.getText();
                 _peer.newCall(_username, _password, num, null, null);
             }
-        }
-        else {
+        } else {
             if (_ca.getIsInbound()) {
                 if (_ca.isAnswered()) {
                     _ca.hangup();
-                }
-                else {
+                } else {
                     _ca.answer();
-                    act.setText("Hangup");
+                    act.setText("Cortar");
                 }
-            }
-            else {
+            } else {
                 _ca.hangup();
             }
         }
     }
 
-    //File | Exit action performed
-    public void jMenuFileExit_actionPerformed(ActionEvent e) {
-        if (_isApplet) {
-            this.hide();
-        }
-        else {
-            super.jMenuFileExit_actionPerformed(e);
-        }
-    }
 
+    @Override
     void button_action(ActionEvent e) {
         if (_ca == null) {
             super.button_action(e);
-        }
-        else {
+        } else {
             String t = e.getActionCommand();
             _ca.sendDTMF(t.charAt(0));
-            status.setText("sent dtmf " + t);
+            status.setText("Enviado dtmf " + t);
         }
     }
 
+    @Override
+    void hold() {
+        if (_ca != null) {
+            _ca.hold();
+        }
+    }
+
+    @Override
     void clear_actionPerformed(ActionEvent e) {
         dialString.setText("");
     }
@@ -243,31 +229,6 @@ public class BeanCanFrameManager
 
     public void set_host(String _host) {
         this._host = _host;
-    }
-
-    public boolean accept(Call ca) {
-        Log.debug("in accept ");
-        boolean ret = true;
-        if (_ca != null) {
-            ret = false;
-        }
-        return ret;
-    }
-
-    boolean canRecord() {
-        boolean ret = false;
-        javax.sound.sampled.AudioPermission ap = new javax.sound.sampled.
-            AudioPermission("record");
-        try {
-            java.security.AccessController.checkPermission(ap);
-            ret = true;
-            Log.debug("Have permission to access microphone");
-        }
-        catch (java.security.AccessControlException ace) {
-            Log.debug("Do not have permission to access microphone");
-            Log.warn(ace.getMessage());
-        }
-        return ret;
     }
 
     /**

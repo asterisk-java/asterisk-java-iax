@@ -1,23 +1,14 @@
-// NAME
-//      $RCSfile: MiniFrame.java,v $
-// DESCRIPTION
-//      [given below in javadoc format]
-// DELTA
-//      $Revision$
-// CREATED
-//      $Date$
-// COPYRIGHT
-//      Mexuar Technologies Ltd
-// TO DO
-//
+
 package org.asteriskjava.iax.protocol;
 
-import org.asteriskjava.iax.util.*;
-import java.io.*;
+
+import org.asteriskjava.iax.util.ByteBuffer;
+
+import java.io.IOException;
 
 /**
  * Representation of a miniframe.
- *
+ * <p/>
  * <pre>
  *                      1                   2                   3
  *  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -29,14 +20,9 @@ import java.io.*;
  * |                                                               |
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  * </pre>
- *
- * @author <a href="mailto:thp@westhawk.co.uk">Tim Panton</a>
- * @version $Revision$ $Date$
  */
 public class MiniFrame extends Frame {
 
-    private final static String version_id =
-            "@(#)$Id$ Copyright Mexuar Technologies Ltd";
 
     private ByteBuffer _buff;
 
@@ -56,12 +42,12 @@ public class MiniFrame extends Frame {
      * The inbound constructor.
      *
      * @param call The Call object
-     * @param bs The incoming message bytes
+     * @param bs   The incoming message bytes
      * @throws IllegalArgumentException The bytes do not represent a
-     * miniframe
+     *                                  miniframe
      */
     public MiniFrame(Call call, byte[] bs)
-    throws IllegalArgumentException {
+            throws IllegalArgumentException {
         ByteBuffer buf = ByteBuffer.wrap(bs);
         _sCall = buf.getShort();
         if (_sCall < 0) {
@@ -81,6 +67,7 @@ public class MiniFrame extends Frame {
      * ack is called to send any required response. This method is
      * empty.
      */
+    @Override
     void ack() {
     }
 
@@ -118,6 +105,7 @@ public class MiniFrame extends Frame {
      *
      * @throws IAX2ProtocolException
      */
+    @Override
     void arrived() throws IAX2ProtocolException {
         int fsz = _call.getFrameSz();
         byte[] bs = new byte[fsz];
@@ -129,8 +117,7 @@ public class MiniFrame extends Frame {
             _data.get(bs);
             try {
                 _call.audioWrite(bs, ts);
-            }
-            catch (IOException ex) {
+            } catch (IOException ex) {
                 Log.warn(ex.getMessage());
             }
         }

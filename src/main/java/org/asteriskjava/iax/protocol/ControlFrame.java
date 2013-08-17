@@ -1,27 +1,14 @@
-// NAME
-//      $RCSfile: ControlFrame.java,v $
-// DESCRIPTION
-//      [given below in javadoc format]
-// DELTA
-//      $Revision$
-// CREATED
-//      $Date$
-// COPYRIGHT
-//      Mexuar Technologies Ltd
-// TO DO
-//
+
 package org.asteriskjava.iax.protocol;
+
+
+import org.asteriskjava.iax.util.ByteBuffer;
 
 /**
  * Represents an IAX ControlFrame.
- *
- * @author <a href="mailto:thp@westhawk.co.uk">Tim Panton</a>
- * @version $Revision$ $Date$
  */
 public class ControlFrame extends FullFrame {
 
-    private final static String version_id =
-            "@(#)$Id$ Copyright Mexuar Technologies Ltd";
 
     final static int HANGUP = 1;
     final static int OLD_RING = 2;
@@ -39,27 +26,40 @@ public class ControlFrame extends FullFrame {
     final static int HOLD = 16;
     final static int UNHOLD = 17;
 
-    static String[] controlTypes = {
-        "ZERO",
-        "Hangup",
-        "Reserved",
-        "Ringing",
-        "Answer",
-        "Busy",
-        "Reserved",
-        "Reserved",
-        "Congestion",
-        "Flash Hook",
-        "Reserved",
-        "Option",
-        "Key Radio",
-        "Unkey Radio",
-        "Call Progress",
-        "Call Proceeding",
-        "Hold",
-        "Unhold"
-    };
 
+    static String[] controlTypes = {
+            "ZERO",
+            "Hangup",
+            "Reserved",
+            "Ringing",
+            "Answer",
+            "Busy",
+            "Reserved",
+            "Reserved",
+            "Congestion",
+            "Flash Hook",
+            "Reserved",
+            "Option",
+            "Key Radio",
+            "Unkey Radio",
+            "Call Progress",
+            "Call Proceeding",
+            "Hold",
+            "Unhold",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "Quelchmoh",
+            "",
+            "Quelch",
+            "Unquelch"
+    };
 
 
     /**
@@ -87,6 +87,7 @@ public class ControlFrame extends FullFrame {
     /**
      * ack is called to send any required response.
      */
+    @Override
     void ack() {
         switch (this._subclass) {
             case RINGING:
@@ -110,16 +111,28 @@ public class ControlFrame extends FullFrame {
      * Sends an answer (ANSWER) back.
      */
     public void sendAnswer() {
-        _subclass = this.ANSWER;
+        _subclass = ControlFrame.ANSWER;
         Log.debug("Sending Answer");
-        sendMe(this.EMPTY);
+        sendMe(ControlFrame.EMPTY);
     }
 
-    public void sendRinging(){
-        _subclass = this.RINGING;
-        Log.debug("Sending Ringing");
-        sendMe(this.EMPTY);
-        _call.setRinging(true);
+    public void SendHold() {
+
+
+        _subclass = ControlFrame.HOLD;
+        _data = new ByteBuffer();
+
+
+        sendMe(ControlFrame.EMPTY);
+
+        Log.debug("Sending Hold");
+    }
+
+    public void SendUnHold() {
+
+        _subclass = ControlFrame.UNHOLD;
+        Log.debug("Sending UnHold");
+        sendMe(ControlFrame.EMPTY);
     }
 
 
@@ -128,8 +141,9 @@ public class ControlFrame extends FullFrame {
      *
      * @param inout Additional text to log
      */
+    @Override
     protected void log(String inout) {
-        StringBuffer bu = new StringBuffer(inout);
+        StringBuilder bu = new StringBuilder(inout);
         bu.append(" Control Frame ");
         if ((_subclass < controlTypes.length) && (_subclass >= 0)) {
             bu.append(controlTypes[_subclass]);
@@ -141,12 +155,14 @@ public class ControlFrame extends FullFrame {
 
 
     // Birgit: Why not remove this. It does less than its parent class.
+
     /**
      * arrived is called when a packet arrives. This method is
      * empty.
      *
      * @throws IAX2ProtocolException
      */
+    @Override
     void arrived() throws IAX2ProtocolException {
     }
 

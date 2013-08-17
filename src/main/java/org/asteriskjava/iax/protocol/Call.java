@@ -1,42 +1,25 @@
-// NAME
-//      $RCSfile: Call.java,v $
-// DESCRIPTION
-//      [given below in javadoc format]
-// DELTA
-//      $Revision$
-// CREATED
-//      $Date$
-// COPYRIGHT
-//      Mexuar Technologies Ltd
-// TO DO
-//
 package org.asteriskjava.iax.protocol;
 
-import java.io.*;
-import org.asteriskjava.iax.util.*;
-import java.util.*;
 
-import org.asteriskjava.iax.audio.*;
+import org.asteriskjava.iax.audio.javasound.AudioInterface;
+import org.asteriskjava.iax.util.ByteBuffer;
+
+import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  * Call deals with all the packets that are part of a specific call (or
  * registration).
- *
- * @author <a href="mailto:thp@westhawk.co.uk">Tim Panton</a>
- * @version $Revision$ $Date$
  */
 /*
-   The thing to remember is that a _received_ message
-   contains fields with the _senders_ viewpoint
-   so _source_ is the far end and _dest_ is us.
-   in the reply the oposite is true :
-   _source_ is us and _dest_ is them.
+The thing to remember is that a _received_ message
+contains fields with the _senders_ viewpoint
+so _source_ is the far end and _dest_ is us.
+in the reply the oposite is true :
+_source_ is us and _dest_ is them.
  */
 public class Call
-    implements Runnable {
-
-    private final static String version_id =
-        "@(#)$Id$ Copyright Mexuar Technologies Ltd";
+        implements Runnable {
 
     // Represent the 'Source Call Number' and 'Destination Call Number'
     // in the FullFrame header. They uniquely identify the call between
@@ -47,7 +30,6 @@ public class Call
     // _rno = Destination Call Number
     private Character _lno;
     private Character _rno;
-
     /**
      * Our peer.
      */
@@ -55,14 +37,11 @@ public class Call
     /**
      * The queue of incoming frames.
      */
-    // JDK 1.5 only: protected Vector<byte[]> _frameQueue;
-    protected Vector _frameQueue;
-
+    protected ArrayList<byte[]> _frameQueue;
     /**
      * The receiving process thread.
      */
     protected Thread _process;
-
     private int _oseq = 0;
     private int _iseq = 0;
     private int _ackedTo = 0;
@@ -70,13 +49,11 @@ public class Call
     private long _startStamp = 0;
     private String _password;
     private boolean _registered;
-
     // The CALLED NUMBER, CALLING NUMBER and CALLING NAME for the IE
     private String _farNo = null;
     private String _nearNo = null;
     private String _farName = null;
     private String _nearName = null;
-
     private boolean _accepted;
     private AudioSender _say;
     private boolean _answered;
@@ -92,11 +69,9 @@ public class Call
     private boolean _recvdFirstAudioFrame = false;
     private boolean _timedout = false;
     private int _hungupCauseCode;
-
     private long _stampTopWord = 0;
     private long _oldStamp = 0;
-
-    private boolean _ringing = false;
+    Ringer ringer = null;
 
     /**
      * The outbound constructor for Call. We know nothing except where
@@ -116,8 +91,8 @@ public class Call
     /**
      * The constructor for Call.
      *
-     * @param friend Our peer
-     * @param forRegister If this is a registration call (true) or not (false)
+     * @param friend        Our peer
+     * @param forRegister   If this is a registration call (true) or not (false)
      * @param forUnregister If this is a unregistration call (true) or not (false)
      */
     public Call(Friend friend, boolean forRegister, boolean forUnregister) {
@@ -170,8 +145,7 @@ public class Call
      * @see #run()
      */
     private synchronized void startRcv() {
-        // JDK 1.5 only _frameQueue = new Vector<byte[]>();
-        _frameQueue = new Vector();
+        _frameQueue = new ArrayList<byte[]>();
         _process = new Thread(this, "call-" + (int) _lno.charValue() + "-rcv");
         _process.setPriority(Thread.MAX_PRIORITY - 1);
 //        _process.setDaemon(true);
@@ -179,13 +153,13 @@ public class Call
         resetClock();
         // Birgit: Tim mentioned using TimerTask to resend
         Runnable retry = new Runnable() {
+
             public void run() {
                 while (!_done) {
                     resendUnacked();
                     try {
                         Thread.sleep(100);
-                    }
-                    catch (InterruptedException ex) {
+                    } catch (InterruptedException ex) {
                         ; // dont care
                     }
                 }
@@ -209,7 +183,7 @@ public class Call
      * @see #run()
      */
     public synchronized void addFrame(byte[] data) {
-        _frameQueue.addElement(data);
+        _frameQueue.add(data);
         this.notifyAll();
     }
 
@@ -218,8 +192,8 @@ public class Call
      * This thread is started by startRcv() and run separately from the
      * binder's recv thread.
      *
-     * @see #startRcv()
      * @todo sort the frames into sequence before we dispose of them
+     * @see #startRcv()
      */
     public void run() {
         while (!_done) {
@@ -227,8 +201,7 @@ public class Call
             synchronized (this) {
                 try {
                     this.wait();
-                }
-                catch (InterruptedException ex) {
+                } catch (InterruptedException ex) {
                     ; // don't care
                 }
                 int sz;
@@ -236,12 +209,12 @@ public class Call
                 // only 20 frames ?
                 // you'd hope that normally we'd get 1 or maybe
                 // 2 frames here.
-                if ( (sz = _frameQueue.size()) > 0) {
+                if ((sz = _frameQueue.size()) > 0) {
                     frames = new Object[sz];
                     for (int i = 0; i < sz; i++) {
-                        frames[i] = _frameQueue.elementAt(i);
+                        frames[i] = _frameQueue.get(i);
                     }
-                    _frameQueue.removeAllElements();
+                    _frameQueue.clear();
                 }
             }
             // now released the lock so let's deal with the list.
@@ -253,9 +226,8 @@ public class Call
             }
             for (int i = 0; i < frames.length; i++) {
                 try {
-                    frameDeal( (byte[]) frames[i]);
-                }
-                catch (Throwable ex1) {
+                    frameDeal((byte[]) frames[i]);
+                } catch (Throwable ex1) {
                     ex1.printStackTrace();
                 }
             }
@@ -279,8 +251,7 @@ public class Call
      * acknowledgement and notifies the frame it has arrived.
      *
      * @param bs byte[]
-     * @exception IAX2ProtocolException Thrown by Frame.arrived()
-     *
+     * @throws IAX2ProtocolException Thrown by Frame.arrived()
      * @see #impliedAck
      * @see Frame#arrived
      */
@@ -292,13 +263,11 @@ public class Call
             impliedAck(ff);
             if (!ff.isAck()) {
                 f = addIn(ff);
-            }
-            else {
+            } else {
                 Log.debug("ignoring oseq in ack");
             }
             ff.ack();
-        }
-        else {
+        } else {
             f = new MiniFrame(this, bs);
             //Log.warn("Mini Frame");
         }
@@ -337,7 +306,7 @@ public class Call
      * We received an implied or explicit ack to the frame we send.
      * Commit it and remove from our outbound array.
      *
-     * @param i The index of the frame in the outbound array
+     * @param i   The index of the frame in the outbound array
      * @param ack The frame that is acked
      */
     private void ackIt(int i, FullFrame ack) {
@@ -401,12 +370,11 @@ public class Call
     /**
      * Starts a new outbound call.
      *
-     * @param username Username (peer or user) for authentication
-     * @param password Password for authentication
-     * @param calledNo Number/extension to call
-     * @param callingNo Number/extension we call from
+     * @param username    Username (peer or user) for authentication
+     * @param password    Password for authentication
+     * @param calledNo    Number/extension to call
+     * @param callingNo   Number/extension we call from
      * @param callingName Name of the person calling
-     *
      */
     public void newCall(String username, String password, String calledNo,
                         String callingNo, String callingName) {
@@ -451,6 +419,9 @@ public class Call
         if (_audio != null) {
             _audio.stopPlay();
             _audio.stopRinging();
+            if (ringer != null) {
+                ringer.stop();
+            }
             _audio.stopRec();
         }
     }
@@ -467,6 +438,10 @@ public class Call
         Log.debug("Call registered = " + b);
     }
 
+    boolean getRegistered() {
+        return _registered;
+    }
+
     /**
      * Sets if this (outbound) call is accepted or not.  This bit of
      * information comes in with a received ACCEPT or REJECT.
@@ -475,6 +450,10 @@ public class Call
      */
     void setAccepted(boolean b) {
         _accepted = b;
+    }
+
+    boolean getAccepted() {
+        return _accepted;
     }
 
     /**
@@ -500,6 +479,9 @@ public class Call
     void setAnswered(boolean b) {
         if (!_answered && b) {
             _audio.stopRinging();
+            if (ringer != null) {
+                ringer.stop();
+            }
             startAudioRec();
         }
         _answered = b;
@@ -527,15 +509,14 @@ public class Call
      *
      * @param bs The incoming audio
      * @param ts The timestap
-     * @exception IOException Description of Exception
-     *
+     * @throws IOException Description of Exception
      * @see VoiceFrame#arrived()
      * @see MiniFrame#arrived()
      */
     public void audioWrite(byte[] bs, long ts) throws IOException {
         if (_audio != null) {
             long stamp = _stampTopWord + ts;
-            if ( (stamp < _oldStamp) && (50000 < (_oldStamp - stamp))) {
+            if ((stamp < _oldStamp) && (50000 < (_oldStamp - stamp))) {
                 Log.debug("Wrapped timestamp on rcv");
                 _stampTopWord += 0x10000;
                 stamp = _stampTopWord + ts;
@@ -555,9 +536,12 @@ public class Call
         _stampTopWord = stamp & 0xffff0000;
         Log.debug("New timestamp top bits are " + _stampTopWord);
 
-        if ( (_audio != null) && (!_recvdFirstAudioFrame)) {
+        if ((_audio != null) && (!_recvdFirstAudioFrame)) {
             _recvdFirstAudioFrame = true;
             _audio.stopRinging();
+            if (ringer != null) {
+                ringer.stop();
+            }
         }
     }
 
@@ -576,7 +560,7 @@ public class Call
     /**
      * Returns the local call number. Together with the remote call
      * number, they uniquely identify the call between two parties.
-     *
+     * <p/>
      * On an outgoing call this represents 'Source Call Number',
      * on an incoming call this represents 'Destination Call Number'.
      *
@@ -589,7 +573,7 @@ public class Call
     /**
      * Returns the remote call number. Together with the local call
      * number, they uniquely identify the call between two parties.
-     *
+     * <p/>
      * On an outgoing call this represents 'Destination Call Number',
      * on an ingoing call this represents 'Source Call Number'.
      *
@@ -681,7 +665,7 @@ public class Call
      * maximum number of retries.
      * If an unacknowledged frame cannot be resend anymore (i.e. it has
      * been sent max retries), we'll tear down the connection.
-     *
+     * <p/>
      * <p>
      * Draft - 7. Message Transport: <br/>
      * If no acknowledgment is received after a locally configured
@@ -751,7 +735,7 @@ public class Call
      */
     void gotAckToNew(FullFrame ack) {
         if (this._rno == null) {
-            _rno = new Character( (char) (0xffff & ack._sCall));
+            _rno = new Character((char) (0xffff & ack._sCall));
         }
         Log.debug("Setting rno = " + (int) (_rno.charValue()));
         _peer.gotAckToNew(this);
@@ -764,7 +748,7 @@ public class Call
      * @see DtmfFrame#DtmfFrame(Call, char)
      */
     public void sendDTMF(char c) {
-        DtmfFrame dtmf = new DtmfFrame(this, c);
+        new DtmfFrame(this, c);
     }
 
     /**
@@ -773,8 +757,8 @@ public class Call
      * @return The status
      */
     public String getStatus() {
-        String ret = "Call " + (this._callIsInbound ? " from " : " to ") +
-            this._farNo;
+        String ret = "Call " + (this._callIsInbound ? " from " : " to ")
+                + this._farNo;
         ret += _answered ? " connected " : " in progress ";
         return ret;
     }
@@ -792,11 +776,10 @@ public class Call
     /**
      * Received a new inbound call. Returns whether or not we accept it.
      *
-     * @param callingNo The peer's calling number
-     * @param calledNo The peer's called number
+     * @param callingNo   The peer's calling number
+     * @param calledNo    The peer's called number
      * @param callingName The peer's calling name
-     * @param username The peer's username for authentication
-     *
+     * @param username    The peer's username for authentication
      * @return True if we will accept, false if we reject
      */
     public Boolean newCallFrom(String callingNo, String calledNo,
@@ -804,16 +787,22 @@ public class Call
                                String username) {
         Boolean ret = null;
         Log.debug("Call.newCallFrom: calledNo=" + calledNo
-                  + ", callingNo=" + callingNo
-                  + ", callingName=" + callingName
-                  + ", username=" + username);
+                + ", callingNo=" + callingNo
+                + ", callingName=" + callingName
+                + ", username=" + username);
         if (_farNo == null) {
             // first time we have seen this one.
             _farNo = callingNo;
             _farName = callingName;
             _nearNo = calledNo;
             this._callIsInbound = true;
-            ret = new Boolean(_peer.willAccept(this));
+            ret = _peer.willAccept(this);
+            if (ret == true) {//edited by benaiad
+                if (ringer == null || ringer.stop == true) {
+                    ringer = new Ringer();
+                    ringer.start();
+                }
+            }
         }
         return ret;
     }
@@ -843,15 +832,28 @@ public class Call
         this.setAnswered(true);
     }
 
-    public void ringing(){
-        ControlFrame ans = new ControlFrame(this);
-        ans.sendRinging();
-        this.setRinging(true);
+    public void hold() {
+
+        ProtocolControlFrame quelch = new ProtocolControlFrame(this);
+        quelch.sendQuelch();
+
+
+        ControlFrame hold = new ControlFrame(this);
+        hold.SendHold();
+    }
+
+    public void unhold() {
+
+        ProtocolControlFrame unquelch = new ProtocolControlFrame(this);
+        unquelch.sendUnQuelch();
+
+        ControlFrame unhold = new ControlFrame(this);
+        unhold.SendUnHold();
     }
 
     /**
      * Returns the far number.
-     *
+     * <p/>
      * On an outgoing call this represents 'CALLED NUMBER' IE,
      * on an incoming call this represents 'CALLING NUMBER' IE.
      *
@@ -863,7 +865,7 @@ public class Call
 
     /**
      * Returns the near number.
-     *
+     * <p/>
      * On an outgoing call this represents 'CALLING NUMBER' IE,
      * on an incoming call this represents 'CALLED NUMBER' IE.
      *
@@ -875,7 +877,7 @@ public class Call
 
     /**
      * Returns the far name.
-     *
+     * <p/>
      * On an incoming call this represents 'CALLING NAME' IE,
      * on an outgoing call will be null.
      *
@@ -887,7 +889,7 @@ public class Call
 
     /**
      * Returns the near name.
-     *
+     * <p/>
      * On an outgoing call this represents 'CALLING NAME' IE,
      * on an incoming call this will be null.
      *
@@ -903,17 +905,13 @@ public class Call
     void setRinging() {
         if (!_recvdFirstAudioFrame) {
             _audio.startRinging();
+//            if(ringer==null || ringer.stop==true){
+//                ringer=new Ringer();
+//                ringer.start();
+//            }
         }
         _peer.gotRinging(this);
         Log.debug("going to make a remote ringing noise...!");
-    }
-
-    void setRinging(Boolean value){
-        _ringing = value;
-    }
-
-    public Boolean isRinging(){
-        return _ringing;
     }
 
     /**
@@ -928,8 +926,7 @@ public class Call
         if (_audio != null) {
             _format = _audio.getFormatBit();
             Log.debug("using audio format = " + _format);
-        }
-        else {
+        } else {
             Log.warn("cant set audio format " + format);
         }
     }
@@ -955,5 +952,4 @@ public class Call
     AudioInterface getAudioFace() {
         return _peer.getAudioFace();
     }
-
 }
