@@ -1,35 +1,23 @@
-// NAME
-//      $RCSfile: AudioProperties.java,v $
-// DESCRIPTION
-//      [given below in javadoc format]
-// DELTA
-//      $Revision$
-// CREATED
-//      $Date$
-// COPYRIGHT
-//      Mexuar Technologies Ltd
-// TO DO
-//
+
 package org.asteriskjava.iax.audio.javasound;
 
-import java.io.*;
-import java.util.*;
-import javax.sound.sampled.*;
-import javax.sound.sampled.Mixer.*;
 
-import org.asteriskjava.iax.protocol.*;
+import org.asteriskjava.iax.protocol.Log;
+
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.Line;
+import javax.sound.sampled.Mixer;
+import javax.sound.sampled.Mixer.Info;
+import java.util.Properties;
+import java.util.Vector;
 
 /**
  * Description of the Class
- *
- * @author <a href="mailto:thp@westhawk.co.uk">Tim Panton</a>
- * @version $Revision$ $Date$
  */
 public class AudioProperties
-    extends Properties {
+        extends Properties {
 
-    private final static String version_id =
-        "@(#)$Id$ Copyright Mexuar Technologies Ltd";
 
     public final static String OUTPUTDEVICE = "outputDevice";
     public final static String INPUTDEVICE = "inputDevice";
@@ -42,22 +30,6 @@ public class AudioProperties
 
     private static Properties __audioProps;
 
-    /**
-     * Description of the Method
-     *
-     * @param fis Description of Parameter
-     */
-    public static void loadFromFile(String fis) {
-        try {
-            __audioProps = new Properties();
-            FileInputStream inf = new FileInputStream(fis);
-            __audioProps.load(inf);
-        }
-        catch (Exception x) {
-            __audioProps = null;
-            Log.warn(x.getMessage());
-        }
-    }
 
     /**
      * Gets the outputDeviceName attribute of the AudioProperties
@@ -84,7 +56,7 @@ public class AudioProperties
      * Description of the Method
      *
      * @param name Description of Parameter
-     * @param val Description of Parameter
+     * @param val  Description of Parameter
      */
     private static void set(String name, String val) {
         if (__audioProps == null) {
@@ -145,8 +117,8 @@ public class AudioProperties
             Log.debug("mixer input " + mixup);
             Mixer mx = AudioSystem.getMixer(mixi);
             Line.Info[] infos = mx.getTargetLineInfo();
-            if ( (infos != null) && (infos.length > 0) &&
-                (infos[0] instanceof DataLine.Info)) {
+            if ((infos != null) && (infos.length > 0) &&
+                    (infos[0] instanceof DataLine.Info)) {
                 vres.add(mixup);
                 if (mixup.equals(preferred)) {
                     foundPreferred = true;
@@ -159,7 +131,7 @@ public class AudioProperties
         if (foundPreferred == true) {
             ret[0] = preferred;
             Log.debug("adding input " + preferred + " (preferred)");
-            int j=1;
+            int j = 1;
             for (int i = 0; i < ret.length; i++) {
                 String mixup = (String) vres.elementAt(i);
                 if (mixup.equals(preferred) == false) {
@@ -197,8 +169,8 @@ public class AudioProperties
             String mixup = mixi.getName().trim();
             Mixer mx = AudioSystem.getMixer(mixi);
             Line.Info[] infos = mx.getSourceLineInfo();
-            if ( (infos != null) && (infos.length > 0) &&
-                (infos[0] instanceof DataLine.Info)) {
+            if ((infos != null) && (infos.length > 0) &&
+                    (infos[0] instanceof DataLine.Info)) {
                 vres.add(mixup);
                 if (mixup.equals(preferred)) {
                     foundPreferred = true;
@@ -211,7 +183,7 @@ public class AudioProperties
         if (foundPreferred == true) {
             ret[0] = preferred;
             Log.debug("adding output " + preferred + " (preferred)");
-            int j=1;
+            int j = 1;
             for (int i = 0; i < ret.length; i++) {
                 String mixup = (String) vres.elementAt(i);
                 if (mixup.equals(preferred) == false) {
@@ -242,22 +214,19 @@ public class AudioProperties
         String bb = get(BIGBUFF);
         if (bb != null) {
             ret = ("TRUE".compareToIgnoreCase(bb) == 0);
-        }
-        else {
+        } else {
             // - we know that jdk1.4 likes bigger buffers
             String jdkversion = System.getProperty("java.version");
             if (jdkversion != null) {
-                if (jdkversion.startsWith("1.5")) {
+                if (jdkversion.startsWith("1.5") || jdkversion.startsWith("1.6")) {
                     ret = false;
-                }
-                else {
+                } else {
                     ret = true;
                     Log.warn("Pre jdk1.5 in use - Using bigger buffers");
                 }
             }
 
-            if (ret == false)
-            {
+            if (ret == false) {
                 // - so does Linux 
                 String osname = System.getProperty("os.name");
                 if (osname != null) {
@@ -287,7 +256,7 @@ public class AudioProperties
      * a microphone.
      *
      * @return True if we have opened incoming audio device, false if
-     * otherwise
+     *         otherwise
      */
     public static boolean isAudioInUsable() {
         boolean ret = false;
@@ -303,7 +272,7 @@ public class AudioProperties
      * a headset or speakers.
      *
      * @return True if we have opened outgoing audio device, false if
-     * otherwise
+     *         otherwise
      */
     public static boolean isAudioOutUsable() {
         boolean ret = false;
@@ -319,7 +288,7 @@ public class AudioProperties
      * a microphone.
      *
      * @param b True if we have opened incoming audio device, false if
-     * otherwise
+     *          otherwise
      */
     static void setAudioInUsable(boolean b) {
         set(AUDIO_IN, Boolean.toString(b));
@@ -330,7 +299,7 @@ public class AudioProperties
      * a headset or speakers.
      *
      * @param b True if we have opened outgoing audio device, false if
-     * otherwise
+     *          otherwise
      */
     static void setAudioOutUsable(boolean b) {
         set(AUDIO_OUT, Boolean.toString(b));
@@ -338,6 +307,7 @@ public class AudioProperties
 
     /**
      * Sets local audio recording on or off.
+     *
      * @param b boolean
      */
     static void setMonitor(boolean b) {
@@ -352,8 +322,10 @@ public class AudioProperties
         }
         return ret;
     }
+
     /**
      * Sets local acoustic echo canceller on or off.
+     *
      * @param b boolean
      */
     static void setAEC(boolean b) {
@@ -368,8 +340,10 @@ public class AudioProperties
         }
         return ret;
     }
+
     /**
      * Sets local recording in stereo mode on or off
+     *
      * @param b boolean
      */
     static void setStereoRec(boolean b) {
@@ -402,10 +376,9 @@ public class AudioProperties
                     ret = false;
                 }
             }
-        }
-        catch (Exception exc) {
-            Log.warn("AudioProperties.closeDateLine(): " 
-                + exc.getClass().getName() + " " + exc.getMessage());
+        } catch (Exception exc) {
+            Log.warn("AudioProperties.closeDateLine(): "
+                    + exc.getClass().getName() + " " + exc.getMessage());
         }
         return ret;
     }

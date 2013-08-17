@@ -1,27 +1,10 @@
-// NAME
-//      $RCSfile: Log.java,v $
-// DESCRIPTION
-//      [given below in javadoc format]
-// DELTA
-//      $Revision$
-// CREATED
-//      $Date$
-// COPYRIGHT
-//      Mexuar Technologies Ltd
-// TO DO
-//
+
 package org.asteriskjava.iax.protocol;
 
 /**
  * Dumb substitute for a logger
- *
- * @author <a href="mailto:thp@westhawk.co.uk">Tim Panton</a>
- * @version $Revision$ $Date$
  */
 public class Log {
-
-    private final static String version_id =
-            "@(#)$Id$ Copyright Mexuar Technologies Ltd";
 
     /**
      * Log level ALL
@@ -34,11 +17,11 @@ public class Log {
     /**
      * Log level VERB(OSE)
      */
-    public static int VERB = 5;
+    public final static int VERB = 5;
     /**
      * Log level DEBUG
      */
-    public static int DEBUG = 4;
+    public final static int DEBUG = 4;
     /**
      * Log level INFO(RMATION)
      */
@@ -46,7 +29,7 @@ public class Log {
     /**
      * Log level WARN(ING)
      */
-    public static int WARN = 2;
+    public final static int WARN = 2;
     /**
      * Log level ERROR (default)
      */
@@ -61,11 +44,12 @@ public class Log {
     /**
      * Constructor for the Log object
      */
-    public Log() { }
+    public Log() {
+    }
 
 
     /**
-     * Sets the log level 
+     * Sets the log level
      *
      * @param level The new level value
      */
@@ -75,7 +59,7 @@ public class Log {
 
 
     /**
-     * Returns the log level 
+     * Returns the log level
      *
      * @return The level value
      */
@@ -83,6 +67,19 @@ public class Log {
         return _level;
     }
 
+    /**
+     * Logs Error message.
+     * The message will only be logged if the log level is greater or
+     * equal then the ERROR level.
+     *
+     * @param string The text to log
+     */
+    public static void error(String string) {
+        if (_level >= ERROR) {
+            String message = "ERROR: " + System.currentTimeMillis() + " " + Thread.currentThread().getName() + "->" + string;
+            System.out.println(message);
+        }
+    }
 
     /**
      * Logs a warning message.

@@ -1,33 +1,16 @@
-// NAME
-//      $RCSfile: DtmfFrame.java,v $
-// DESCRIPTION
-//      [given below in javadoc format]
-// DELTA
-//      $Revision$
-// CREATED
-//      $Date$
-// COPYRIGHT
-//      Mexuar Technologies Ltd
-// TO DO
-//
+
 package org.asteriskjava.iax.protocol;
 
 /**
  * Represents an IAX DTMF FRAME
- *
- * @author <a href="mailto:thp@westhawk.co.uk">Tim Panton</a>
- * @version $Revision$ $Date$
  */
 class DtmfFrame extends FullFrame {
-    private final static String version_id =
-            "@(#)$Id$ Copyright Mexuar Technologies Ltd";
-
 
     /**
      * The outbound constructor.
      *
      * @param ca The Call object
-     * @param c The outgoing DTMF character: 0-9, A-D, *, # 
+     * @param c  The outgoing DTMF character: 0-9, A-D, *, #
      */
     DtmfFrame(Call ca, char c) {
         super(ca);
@@ -46,6 +29,7 @@ class DtmfFrame extends FullFrame {
      * ack is called to send any required response. This method is empty
      * (for the moment?).
      */
+    @Override
     void ack() {
         // inbound - ignore it for now....
     }

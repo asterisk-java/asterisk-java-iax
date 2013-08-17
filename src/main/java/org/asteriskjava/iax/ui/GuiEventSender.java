@@ -1,31 +1,15 @@
-// NAME
-//      $RCSfile: GuiEventSender.java,v $
-// DESCRIPTION
-//      [given below in javadoc format]
-// DELTA
-//      $Revision$
-// CREATED
-//      $Date$
-// COPYRIGHT
-//      Mexuar Technologies Ltd
-// TO DO
-//
+
 package org.asteriskjava.iax.ui;
-import org.asteriskjava.iax.protocol.*;
+
+import org.asteriskjava.iax.protocol.Call;
+import org.asteriskjava.iax.protocol.Friend;
+import org.asteriskjava.iax.protocol.ProtocolEventListener;
 
 /**
  * Decouples events from the main threads. This class it used by Friend.
- *
- * @author <a href="mailto:thp@westhawk.co.uk">Tim Panton</a>
- * @version $Revision$ $Date$
- * @see Friend
  */
 
-public class GuiEventSender
-    implements ProtocolEventListener {
-
-    private final static String version_id =
-        "@(#)$Id$ Copyright Mexuar Technologies Ltd";
+public class GuiEventSender implements ProtocolEventListener {
 
     private ProtocolEventListener _gui;
     private Call _call;
@@ -133,8 +117,8 @@ public class GuiEventSender
     /**
      * setHostReachable
      *
-     * @param f Friend
-     * @param b boolean
+     * @param f         Friend
+     * @param b         boolean
      * @param roundtrip int
      */
     public void setHostReachable(Friend f, boolean b, int roundtrip) {

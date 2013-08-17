@@ -1,32 +1,18 @@
-// NAME
-//      $RCSfile: AudioAlaw.java,v $
-// DESCRIPTION
-//      [given below in javadoc format]
-// DELTA
-//      $Revision$
-// CREATED
-//      $Date$
-// COPYRIGHT
-//      Mexuar Technologies Ltd
-// TO DO
-//
+
 package org.asteriskjava.iax.audio.javasound;
 
-import java.io.*;
-import org.asteriskjava.iax.util.*;
-import javax.sound.sampled.*;
-import org.asteriskjava.iax.protocol.*;
+import org.asteriskjava.iax.protocol.Log;
+import org.asteriskjava.iax.protocol.VoiceFrame;
+import org.asteriskjava.iax.util.ByteBuffer;
+
+import javax.sound.sampled.AudioFormat;
+
 
 /**
  * Description of the Class
- *
- * @author <a href="mailto:snmp@westhawk.co.uk">Birgit Arkesteijn</a>
- * @version $Revision$ $Date$
  */
 public class AudioAlaw extends AbstractAudio {
 
-    private final static String version_id =
-            "@(#)$Id$ Copyright Mexuar Technologies Ltd";
 
     AudioFormat _alawFormat;
     private int _ss;
@@ -72,7 +58,7 @@ public class AudioAlaw extends AbstractAudio {
     private final static byte SEG_SHIFT = 4;
     private final static short[] seg_end = {
             0xFF, 0x1FF, 0x3FF, 0x7FF, 0xFFF, 0x1FFF, 0x3FFF, 0x7FFF
-            };
+    };
 
 
     /**
@@ -155,7 +141,7 @@ public class AudioAlaw extends AbstractAudio {
             1888, 1824, 2016, 1952, 1632, 1568, 1760, 1696,
             688, 656, 752, 720, 560, 528, 624, 592,
             944, 912, 1008, 976, 816, 784, 880, 848
-            };
+    };
 
 
     /**
@@ -180,14 +166,13 @@ public class AudioAlaw extends AbstractAudio {
                 _alawFormat = new AudioFormat(
                         AudioFormat.Encoding.ALAW,
                         8000.0F, // sampleRate
-                8, // sampleSizeInBits
-                1, // channels
-                1, // frameSize
-                8000.0F, // frameRate
-                false);// bigEndian
+                        8, // sampleSizeInBits
+                        1, // channels
+                        1, // frameSize
+                        8000.0F, // frameRate
+                        false);// bigEndian
 
-            }
-            catch (Exception x) {
+            } catch (Exception x) {
                 Log.warn(x.getMessage());
             }
         }
@@ -195,10 +180,10 @@ public class AudioAlaw extends AbstractAudio {
     }
 
 
-
     /**
      * changedProps
      */
+    @Override
     public void changedProps() {
     }
 
@@ -208,6 +193,7 @@ public class AudioAlaw extends AbstractAudio {
      *
      * @return int
      */
+    @Override
     public int getSampSz() {
         return 160;
     }
@@ -216,9 +202,10 @@ public class AudioAlaw extends AbstractAudio {
     /**
      * Description of the Method
      *
-     * @param in Description of Parameter
+     * @param in  Description of Parameter
      * @param out Description of Parameter
      */
+    @Override
     public void convertToLin(byte[] in, byte[] out) {
         convert(in, out);
     }
@@ -227,9 +214,10 @@ public class AudioAlaw extends AbstractAudio {
     /**
      * Description of the Method
      *
-     * @param in Description of Parameter
+     * @param in  Description of Parameter
      * @param out Description of Parameter
      */
+    @Override
     public void convertFromLin(byte[] in, byte[] out) {
         ByteBuffer bb = ByteBuffer.wrap(in);
         for (int i = 0; i < in.length / 2; i++) {
@@ -240,29 +228,9 @@ public class AudioAlaw extends AbstractAudio {
 
 
     /**
-     * The main program for the AudioAlaw class
-     *
-     * @param args The command line arguments
-     */
-    public static void main(String[] args) {
-        Log.setLevel(Log.ALL);
-        AudioProperties.loadFromFile("audio.properties");
-        Audio8k a8 = new Audio8k();
-        AudioAlaw alaw = new AudioAlaw(a8);
-        try {
-            alaw.test();
-        }
-        catch (IOException ex) {
-            Log.debug(ex.getMessage());
-        }
-
-    }
-
-
-    /**
      * convert
      *
-     * @param in byte[]
+     * @param in  byte[]
      * @param out byte[]
      */
     public static void convert(byte[] in, byte[] out) {
@@ -279,9 +247,11 @@ public class AudioAlaw extends AbstractAudio {
      *
      * @return int
      */
+    @Override
     public int getFormatBit() {
         return VoiceFrame.ALAW_BIT;
     }
+
 
 }
 

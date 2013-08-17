@@ -1,44 +1,31 @@
-// NAME
-//      $RCSfile: Friend.java,v $
-// DESCRIPTION
-//      [given below in javadoc format]
-// DELTA
-//      $Revision$
-// CREATED
-//      $Date$
-// COPYRIGHT
-//      Mexuar Technologies Ltd
-// TO DO
-//
+
 package org.asteriskjava.iax.protocol;
 
-//import java.net.*;
-import org.asteriskjava.iax.util.*;
-import java.util.*;
 
-import org.asteriskjava.iax.audio.*;
+import org.asteriskjava.iax.audio.javasound.AudioInterface;
+import org.asteriskjava.iax.util.ByteBuffer;
+
+import java.util.Enumeration;
+import java.util.Hashtable;
+import java.util.Timer;
+
 
 /**
  * Friend deals with packets to and from a specific IP address, which
  * should be an asterisk server.
  * If you register() with the PBX, then it acts as friend, until then
  * it is a user.
- *
+ * <p/>
  * It manages calls and distribution of frames to the PBX.
- *
- * @author <a href="mailto:thp@westhawk.co.uk">Tim Panton</a>
- * @version $Revision$ $Date$
  */
 public class Friend extends java.util.TimerTask {
 
-    private final static String version_id =
-            "@(#)$Id$ Copyright Mexuar Technologies Ltd";
 
-    // JDK 1.5 only: private Hashtable<Character, Call> _scalls = new Hashtable<Character, Call>(20);
-    private Hashtable _scalls = new Hashtable(20);
+    private Hashtable<Character, Call> _scalls = new Hashtable<Character, Call>(20);
+    // private Hashtable _scalls = new Hashtable(20);
 
-    // JDK 1.5 only: private Hashtable<Character, Call> _awaitingAck = new Hashtable<Character, Call>(3);
-    private Hashtable _awaitingAck = new Hashtable(3);
+    private Hashtable<Character, Call> _awaitingAck = new Hashtable<Character, Call>(3);
+    // private Hashtable _awaitingAck = new Hashtable(3);
 
     private String _iad;
     private Binder _binder;
@@ -57,7 +44,7 @@ public class Friend extends java.util.TimerTask {
     /**
      * Constructor for the Friend object
      *
-     * @param bi The associated binder object
+     * @param bi   The associated binder object
      * @param them The asterisk host address
      */
     public Friend(Binder bi, String them) {
@@ -73,9 +60,9 @@ public class Friend extends java.util.TimerTask {
     /**
      * Constructor for the Friend object
      *
-     * @param bi The associated binder object
+     * @param bi   The associated binder object
      * @param them The asterisk host address
-     * @param ear The protocal event listener
+     * @param ear  The protocal event listener
      */
     public Friend(Binder bi, String them, ProtocolEventListener ear) {
         this(bi, them);
@@ -86,10 +73,10 @@ public class Friend extends java.util.TimerTask {
     /**
      * Find the call object, based on _our_ number.
      * <ul>
-     *    <li> for an inbound frame this is dcall</li>
-     *    <li> for an outbound frame (why would you care?)</li>
-     *    <li> this is scall</li>
-     *    <li> an inbound new will have 0</li>
+     * <li> for an inbound frame this is dcall</li>
+     * <li> for an outbound frame (why would you care?)</li>
+     * <li> this is scall</li>
+     * <li> an inbound new will have 0</li>
      * </ul>
      *
      * @param theirno Character
@@ -146,27 +133,28 @@ public class Friend extends java.util.TimerTask {
        look in a dCall list - should really check that it is only
        expecting this.
      */
+
     /**
      * Handle received data from our binder. Find the associated Call,
      * or if it is a new incoming call, create a new Call.
      *
      * @param data byte[]
      */
-     public void recv(byte[] data) {
+    public void recv(byte[] data) {
         /*
            we are still on the recv thread!
          */
         int scnum = (data[0] & 0x7f) << 8;
         scnum += ((0x7f & data[1]));
         scnum += (data[1] < 0 ? 128 : 0);
-        Character sc = new Character((char) scnum);
+        Character sc = Character.valueOf((char) scnum);
 
         Call ca = findCall(sc);
         if (ca == null) {
             int dcnum = (data[2] & 0x7f) << 8;
             dcnum += ((0x7f & data[3]));
             dcnum += (data[3] < 0 ? 128 : 0);
-            Character dc = new Character((char) dcnum);
+            Character dc = Character.valueOf((char) dcnum);
             ca = findWaiting(dc);
             if ((ca == null) && (dcnum == 0)) {
                 ca = new Call(this);
@@ -240,17 +228,17 @@ public class Friend extends java.util.TimerTask {
         if (_cno == 0) {
             _cno++;
         }
-        return new Character(_cno++);
+        return Character.valueOf(_cno++);
     }
 
 
     /**
      * Makes a new outgoing call.
      *
-     * @param username Username (peer or user) for authentication
-     * @param secret Password for authentication
-     * @param calledNo Number/extension to call
-     * @param callingNo Number/extension we call from
+     * @param username    Username (peer or user) for authentication
+     * @param secret      Password for authentication
+     * @param calledNo    Number/extension to call
+     * @param callingNo   Number/extension we call from
      * @param callingName Name of the person calling
      * @return a new call object
      */
@@ -297,7 +285,6 @@ public class Friend extends java.util.TimerTask {
      * Adds a new call object to our list of calls.
      *
      * @param ncall Call
-     *
      * @see #recv(byte[])
      * @see #gotAckToNew(Call)
      */
@@ -340,8 +327,7 @@ public class Friend extends java.util.TimerTask {
                     _pokecall = null;
                     setPong(false, -1);
                 }
-            }
-            else if (!ca.isForReg() && !ca.isForUnReg()) {
+            } else if (!ca.isForReg() && !ca.isForUnReg()) {
                 ProtocolEventListener ges = _binder.getGuiEventSender(_gui);
                 ges.hungUp(ca);
             }
@@ -368,7 +354,6 @@ public class Friend extends java.util.TimerTask {
 
     /**
      * Are we registered?
-     *
      */
     public boolean isRegistered() {
         return _registered;
@@ -377,6 +362,7 @@ public class Friend extends java.util.TimerTask {
 
     /**
      * Unregisters this username and password.
+     *
      * @see #setRegistered(boolean)
      */
     public void unregister() {
@@ -403,6 +389,7 @@ public class Friend extends java.util.TimerTask {
      * send a registration call (update) on a regular basis.
      * Called by timer.
      */
+    @Override
     public void run() {
         // start the process off by creating a special Call.
         if (_regcall == null) {
@@ -420,14 +407,13 @@ public class Friend extends java.util.TimerTask {
      * Sets if registered or not. This method is called by Call.
      *
      * @param ok True if registered, false if not
-     *
      * @see Call#setRegistered(boolean)
      */
     protected void setRegistered(boolean ok) {
         _registered = ok;
         if (_gui != null) {
             ProtocolEventListener ges = this._binder.getGuiEventSender(_gui);
-            ges.registered(this,ok);
+            ges.registered(this, ok);
 
         }
         if (_regcall != null) {
@@ -458,7 +444,7 @@ public class Friend extends java.util.TimerTask {
     /**
      * Sets if we received a pong to our poke (or ping).
      *
-     * @param b True if we received pong, false otherwise
+     * @param b         True if we received pong, false otherwise
      * @param roundtrip The round trip (ms) of the request
      * @see #checkHostReachable()
      */
@@ -481,7 +467,6 @@ public class Friend extends java.util.TimerTask {
      * The call is ringing. Tell the gui.
      *
      * @param ca The ringing call
-     *
      * @see Call#setRinging()
      */
     void gotRinging(Call ca) {
@@ -504,7 +489,6 @@ public class Friend extends java.util.TimerTask {
             ges.answered(ca);
         }
     }
-
 
 
     /**

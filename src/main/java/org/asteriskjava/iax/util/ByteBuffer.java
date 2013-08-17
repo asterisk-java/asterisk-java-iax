@@ -76,8 +76,8 @@ public class ByteBuffer {
         if (offset + pos + 2 > myStore.length) {
             throw new IndexOutOfBoundsException();
         }
-        short s = (short) ( (myStore[offset + pos] << 8) +
-                           (myStore[offset + pos + 1] & 0xFF));
+        short s = (short) ((myStore[offset + pos] << 8) +
+                (myStore[offset + pos + 1] & 0xFF));
         pos += 2;
         return s;
     }
@@ -86,8 +86,8 @@ public class ByteBuffer {
         if (offset + of + 2 > myStore.length) {
             throw new IndexOutOfBoundsException();
         }
-        short s = (short) ( (myStore[offset + of] << 8) +
-                           (myStore[offset + of + 1] & 0xFF));
+        short s = (short) ((myStore[offset + of] << 8) +
+                (myStore[offset + of + 1] & 0xFF));
         return s;
     }
 
@@ -101,9 +101,9 @@ public class ByteBuffer {
             throw new IndexOutOfBoundsException();
         }
         int i = (myStore[offset + pos] << 24)
-            + ( (myStore[offset + pos + 1] & 0xFF) << 16)
-            + ( (myStore[offset + pos + 2] & 0xFF) << 8)
-            + (myStore[offset + pos + 3] & 0xFF);
+                + ((myStore[offset + pos + 1] & 0xFF) << 16)
+                + ((myStore[offset + pos + 2] & 0xFF) << 8)
+                + (myStore[offset + pos + 3] & 0xFF);
         pos += 4;
         return i;
     }
@@ -129,7 +129,7 @@ public class ByteBuffer {
         if (offset + pos + 2 > myStore.length) {
             throw new IndexOutOfBoundsException();
         }
-        myStore[offset + pos++] = (byte) ( ( (short) c) >> 8);
+        myStore[offset + pos++] = (byte) (((short) c) >> 8);
         myStore[offset + pos++] = (byte) c;
     }
 
@@ -143,7 +143,7 @@ public class ByteBuffer {
         if (offset + i + 2 > myStore.length) {
             throw new IndexOutOfBoundsException();
         }
-        myStore[offset + i] = (byte) ( ( (short) c) >> 8);
+        myStore[offset + i] = (byte) (((short) c) >> 8);
         myStore[offset + i + 1] = (byte) c;
     }
 
@@ -157,8 +157,8 @@ public class ByteBuffer {
             throw new IndexOutOfBoundsException();
         }
         myStore[offset + pos++] = (byte) (i >> 24);
-        myStore[offset + pos++] = (byte) ( (i >> 16) & 0xff);
-        myStore[offset + pos++] = (byte) ( (i >> 8) & 0xff);
+        myStore[offset + pos++] = (byte) ((i >> 16) & 0xff);
+        myStore[offset + pos++] = (byte) ((i >> 8) & 0xff);
         myStore[offset + pos++] = (byte) (i & 0xff);
     }
 
@@ -197,8 +197,8 @@ public class ByteBuffer {
         if (offset + pos + 2 > myStore.length) {
             throw new IndexOutOfBoundsException();
         }
-        short s = (short) ( (myStore[offset + pos] << 8) +
-                           (myStore[offset + pos + 1] & 0xFF));
+        short s = (short) ((myStore[offset + pos] << 8) +
+                (myStore[offset + pos + 1] & 0xFF));
         pos += 2;
         return (char) s;
     }
@@ -213,8 +213,8 @@ public class ByteBuffer {
         if (offset + i + 2 > myStore.length) {
             throw new IndexOutOfBoundsException();
         }
-        short s = (short) ( (myStore[offset + i] << 8) +
-                           (myStore[offset + i + 1] & 0xFF));
+        short s = (short) ((myStore[offset + i] << 8) +
+                (myStore[offset + i + 1] & 0xFF));
         return (char) s;
     }
 

@@ -1,10 +1,10 @@
 package org.asteriskjava.iax.protocol;
 
-import org.asteriskjava.iax.audio.*;
-import org.asteriskjava.iax.util.*;
+import org.asteriskjava.iax.audio.javasound.AudioInterface;
+import org.asteriskjava.iax.util.ByteBuffer;
 
 public abstract class Binder {
- 
+
     abstract public void send(String string, ByteBuffer bs);
 
     abstract public Friend removeFriend(String _iad);
@@ -13,18 +13,15 @@ public abstract class Binder {
     abstract public void stop();
 
     abstract public void unregister(ProtocolEventListener gui) throws Exception;
-    
+
     abstract public AudioInterface getAudioFace();
-    
+
     abstract public void register(String username, String password,
-        ProtocolEventListener gui, boolean wantIncoming)
-    throws Exception ;
+                                  ProtocolEventListener gui, boolean wantIncoming)
+            throws Exception;
 
 
-    protected static char[]  hex = {
-        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D',
-        'E', 'F'};
-
+    protected final static char[] hex = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
 
     /**
@@ -37,9 +34,9 @@ public abstract class Binder {
      */
 
     public static String enHex(byte[] dig, Character sep) {
-        StringBuffer ret = new StringBuffer(32);
-        for (int i = 0;i < dig.length ; i++) {
-            int v = (0x7f & dig[i]) + ( (dig[i] < 0) ? 128 : 0);
+        StringBuilder ret = new StringBuilder(32);
+        for (int i = 0; i < dig.length; i++) {
+            int v = (0x7f & dig[i]) + ((dig[i] < 0) ? 128 : 0);
             int h = v >> 4;
             int l = v & 0xf;
             ret.append(hex[h]).append(hex[l]);
@@ -58,6 +55,6 @@ public abstract class Binder {
      * @return ProtocolEventListener
      */
     public abstract ProtocolEventListener getGuiEventSender(
-        ProtocolEventListener _gui);
+            ProtocolEventListener _gui);
 
 }

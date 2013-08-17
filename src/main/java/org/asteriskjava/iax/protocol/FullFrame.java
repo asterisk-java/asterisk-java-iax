@@ -1,21 +1,11 @@
-// NAME
-//      $RCSfile: FullFrame.java,v $
-// DESCRIPTION
-//      [given below in javadoc format]
-// DELTA
-//      $Revision$
-// CREATED
-//      $Date$
-// COPYRIGHT
-//      Mexuar Technologies Ltd
-// TO DO
-//
 package org.asteriskjava.iax.protocol;
 
-import org.asteriskjava.iax.util.*;
+
+import org.asteriskjava.iax.util.ByteBuffer;
+
 /**
  * Represents all FullFrames - understands about Acks etc.
- *
+ * <p/>
  * <pre>
  *                     1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -31,14 +21,8 @@ import org.asteriskjava.iax.util.*;
  * |                                                               |
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  * </pre>
- *
- * @author <a href="mailto:thp@westhawk.co.uk">Tim Panton</a>
- * @version $Revision$ $Date$
  */
 public abstract class FullFrame extends Frame {
-
-    private final static String version_id =
-            "@(#)$Id$ Copyright Mexuar Technologies Ltd";
 
     final static int DTMF = 1; // 0-9, A-D, *, #
     final static int VOICE = 2; //   Data Audio Compression Format Raw Voice Data
@@ -49,60 +33,73 @@ public abstract class FullFrame extends Frame {
     final static int TEXT = 7; //Raw Text
     final static int IMAGE = 8; // Image Compression Format Raw Image Data
     final static int HTML = 9; //HTML Frame Types Message Specific
-
-    /** The maximum number of retires we'll send */
+    /**
+     * The maximum number of retires we'll send
+     */
     private final static int MAXRETRIES = 6;
-
-    /** The retry interval */
+    /**
+     * The retry interval
+     */
     private final static int RETRYINTERVAL = 500;
-
-    /** The latest outgoing message */
+    /**
+     * The latest outgoing message
+     */
     protected ByteBuffer _outGoing;
-
-    /** The destination call number */
+    /**
+     * The destination call number
+     */
     int _dCall;
-
-    /** The outbound stream sequence number */
+    /**
+     * The outbound stream sequence number
+     */
     int _oseq;
-
-    /** The inbound stream sequence number */
+    /**
+     * The inbound stream sequence number
+     */
     int _iseq;
-
-    /** The subclass */
+    /**
+     * The subclass
+     */
     int _subclass;
-
-    /** The frame type */
+    /**
+     * The frame type
+     */
     int _frametype;
-
-    /** The C bit */
+    /**
+     * The C bit
+     */
     boolean _cbit;
-
-    /** is retry (or not) */
+    /**
+     * is retry (or not)
+     */
     boolean _retry;
-
-    /** Indicates whether this message is an ACK */
+    /**
+     * Indicates whether this message is an ACK
+     */
     boolean _iamanack;
-
-    /** The acknowledgement frame to this frame */
+    /**
+     * The acknowledgement frame to this frame
+     */
     FullFrame _myAck;
-
-    /** The next retry timestamp */
+    /**
+     * The next retry timestamp
+     */
     private int _nextRetryTime;
-
-    /** The number of retries sent */
+    /**
+     * The number of retries sent
+     */
     private int _numRetries;
-
 
     /**
      * The inbound constructor.
      *
      * @param call The Call object
-     * @param bs The incoming message bytes
+     * @param bs   The incoming message bytes
      * @throws IllegalArgumentException The bytes do not represent a
-     * fullframe
+     *                                  fullframe
      */
     public FullFrame(Call call, byte[] bs)
-    throws IllegalArgumentException {
+            throws IllegalArgumentException {
         ByteBuffer buf = ByteBuffer.wrap(bs);
         _sCall = buf.getShort();
         if (_sCall < 0) {
@@ -132,7 +129,6 @@ public abstract class FullFrame extends Frame {
         _call = call;
     }
 
-
     /**
      * The outbound constructor.
      *
@@ -152,12 +148,11 @@ public abstract class FullFrame extends Frame {
         setTimestampVal(call.getTimestamp());
     }
 
-
     /**
      * Creates a new FullFrame of the correct type.
      *
      * @param call Call
-     * @param bs byte[]
+     * @param bs   byte[]
      * @return a FullFrame
      */
     public static FullFrame create(Call call, byte[] bs) {
@@ -177,18 +172,18 @@ public abstract class FullFrame extends Frame {
                 default:
                     Log.warn("FullFrame type " + frametype);
                     ret =
-                        new FullFrame(call, bs) {
-                            void ack() {
-                                Log.warn("Sending Ack on unimplemented FullFrame Type");
-                                sendAck();
-                            }
-                        };
+                            new FullFrame(call, bs) {
+
+                                void ack() {
+                                    Log.warn("Sending Ack on unimplemented FullFrame Type");
+                                    sendAck();
+                                }
+                            };
                     break;
             }
         }
         return ret;
     }
-
 
     /**
      * Returns whether or not this is a retry frame.
@@ -199,7 +194,6 @@ public abstract class FullFrame extends Frame {
         return this._retry;
     }
 
-
     /**
      * Returns if this is a NEW message. False by default.
      *
@@ -208,7 +202,6 @@ public abstract class FullFrame extends Frame {
     public boolean isANew() {
         return false;
     }
-
 
     /**
      * Returns if this is an ACK message.
@@ -219,7 +212,6 @@ public abstract class FullFrame extends Frame {
         return this._iamanack;
     }
 
-
     /**
      * Returns the source call number as an Character.
      *
@@ -228,7 +220,6 @@ public abstract class FullFrame extends Frame {
     public Character getScall() {
         return new Character((char) ((0xffff) & this._sCall));
     }
-
 
     /**
      * Sends a specified payload. Payload represents the Data field in
@@ -249,14 +240,14 @@ public abstract class FullFrame extends Frame {
         }
         buff.putChar((char) rd);
         long tst = this.getTimestampVal();
-        tst =  ((0x100000000L & tst) > 0) ? tst - 0x100000000L : tst;
-        buff.putInt((int)tst);
+        tst = ((0x100000000L & tst) > 0) ? tst - 0x100000000L : tst;
+        buff.putInt((int) tst);
         buff.put((byte) _oseq);
         buff.put((byte) _iseq);
         buff.put((byte) _frametype);
-        if (_subclass > 128){
+        if (_subclass > 128) {
             _cbit = true;
-            for (int s=0; s< 31; s++){
+            for (int s = 0; s < 31; s++) {
                 if (((1 << s) & _subclass) != 0) {
                     _subclass = s;
                     break;
@@ -272,7 +263,6 @@ public abstract class FullFrame extends Frame {
         sendAndStore(buff);
     }
 
-
     /**
      * Resends this frame.
      * Returns if the frame has reached it max number of retries or not.
@@ -280,7 +270,7 @@ public abstract class FullFrame extends Frame {
      * mechanism.
      *
      * @return True if number of retries hasn't rearched its max, False
-     * if this was the last retry.
+     *         if this was the last retry.
      */
     /* five retries are send, the sixth time round is used to time out.
      */
@@ -289,22 +279,21 @@ public abstract class FullFrame extends Frame {
         // is it time for another resend?
         if (_nextRetryTime < now) {
             // do NOT send the last time!
-            if (_numRetries < MAXRETRIES -1) {
+            if (_numRetries < MAXRETRIES - 1) {
                 if (!_retry) {
                     setRetryBit();
                 }
                 sendFromStore();
                 Log.warn("time " + now + " resending "
-                    + this.getTimestampVal() + " " + _numRetries + "th time.");
+                        + this.getTimestampVal() + " " + _numRetries + "th time.");
             } else {
                 Log.warn("time " + now + " NOT resending "
-                    + this.getTimestampVal() + " " + _numRetries + "th time.");
+                        + this.getTimestampVal() + " " + _numRetries + "th time.");
             }
             _nextRetryTime = now + (RETRYINTERVAL * ++_numRetries);
         }
         return _numRetries < MAXRETRIES;
     }
-
 
     /**
      * Creates an acknowledgement frame. This method is called by
@@ -322,14 +311,30 @@ public abstract class FullFrame extends Frame {
         switch (sort) {
             case ProtocolControlFrame.ACK:
                 ack._iamanack = true;
-                ack.setTimestamp(this.getTimestamp());
+                ack._sCall = _call.getLno(); //added by benaiad
+                ack.setTimestamp(this.getTimestamp());//benaiad must check this
                 ack._iseq = _call.getIseq();
                 ack._oseq = _call.getOseq();
                 break;
             case ProtocolControlFrame.PONG:
+                ack._sCall = _call.getRno(); //added this
+                //ack._oseq=_call.getOseqInc(); //added this
+                ack._iseq = _call.getOseq(); //added this
+                ack.setTimestamp(this.getTimestamp()); //added this
+                ack._retry = false; //added this
+                break; //added this
             case ProtocolControlFrame.LAGRP:
                 ack._oseq = _call.getOseqInc();
                 ack._iseq = _call.getIseq();
+                ack.setTimestamp(this.getTimestamp());
+                break;
+            case ProtocolControlFrame.ACCEPT:
+                ack._oseq = _call.getOseqInc();
+                ack._iseq = _call.getIseq();
+                //ack._sCall = _sCall;//was
+                ack._dCall = _sCall;//added by benaiad
+                //ack._sCall = _dCall;//added by benaiad
+                ack._sCall = _call.getLno(); //added by benaiad
                 ack.setTimestamp(this.getTimestamp());
                 break;
             default:
@@ -343,7 +348,6 @@ public abstract class FullFrame extends Frame {
         return ack;
     }
 
-
     /**
      * Sends an acknowledgement frame.
      */
@@ -352,7 +356,6 @@ public abstract class FullFrame extends Frame {
         Log.debug("Sending Ack");
         ack.sendMe((InfoElement) null);
     }
-
 
     /**
      * Sends the latest outgoing message.
@@ -364,7 +367,6 @@ public abstract class FullFrame extends Frame {
             _call.send(_outGoing);
         }
     }
-
 
     /**
      * Sends a new message. If this message is not ACK, store it and
@@ -382,7 +384,6 @@ public abstract class FullFrame extends Frame {
         sendFromStore();
     }
 
-
     /**
      * Logs the timestamp and the in- + outbound stream sequence
      * number.
@@ -390,7 +391,7 @@ public abstract class FullFrame extends Frame {
      * @param inoutNtype Text to include
      */
     protected void log(String inoutNtype) {
-        StringBuffer bu = new StringBuffer("Time: ");
+        StringBuilder bu = new StringBuilder("Time: ");
         bu.append(_call.getTimestamp()).append(", ");
         bu.append(inoutNtype);
         bu.append(", Timestamp: ").append(this.getTimestampVal());
@@ -402,7 +403,6 @@ public abstract class FullFrame extends Frame {
         Log.debug(bu.toString());
     }
 
-
     /**
      * Commit this frame. This method is called when a packet we sent
      * has been acked.
@@ -411,7 +411,6 @@ public abstract class FullFrame extends Frame {
      */
     void commit(FullFrame ack) {
     }
-
 
     /**
      * Logs this frame.
@@ -431,7 +430,6 @@ public abstract class FullFrame extends Frame {
         Log.debug("packet dump" + d);
     }
 
-
     /**
      * Converts a byte to an int.
      *
@@ -446,7 +444,6 @@ public abstract class FullFrame extends Frame {
         return ret;
     }
 
-
     /**
      * arrived is called when a packet arrives. This method
      * doesn't do anything more than dumping the frame.
@@ -457,7 +454,6 @@ public abstract class FullFrame extends Frame {
     void arrived() throws IAX2ProtocolException {
         dump();
     }
-
 
     /**
      * Sets the retry bit.
@@ -470,6 +466,4 @@ public abstract class FullFrame extends Frame {
             _retry = true;
         }
     }
-
 }
-

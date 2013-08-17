@@ -1,43 +1,29 @@
-// NAME
-//      $RCSfile: Audio8k.java,v $
-// DESCRIPTION
-//      [given below in javadoc format]
-// DELTA
-//      $Revision$
-// CREATED
-//      $Date$
-// COPYRIGHT
-//      Mexuar Technologies Ltd
-// TO DO
-//
+
 package org.asteriskjava.iax.audio.javasound;
 
-import java.io.*;
-import javax.sound.sampled.*;
+import org.asteriskjava.iax.protocol.AudioSender;
+import org.asteriskjava.iax.protocol.Log;
+import org.asteriskjava.iax.protocol.VoiceFrame;
+import org.asteriskjava.iax.util.ByteBuffer;
 
-import org.asteriskjava.iax.audio.*;
-import org.asteriskjava.iax.protocol.*;
-import org.asteriskjava.iax.util.*;
+import javax.sound.sampled.*;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+
 
 /**
  * This class implements the audio interface for 16 bit
- *  signed linear audio.
+ * signed linear audio.
  * It also provides support for codecs that can convert
  * to and from SLIN, specifically alaw and ulaw (for now)
- *
- *
- * @author <a href="mailto:thp@westhawk.co.uk">Tim Panton</a>
- * @version $Revision$ $Date$
  */
 public class Audio8k
-    implements AudioInterface, Runnable {
+        implements AudioInterface, Runnable {
 
-    private final static String version_id =
-        "@(#)$Id$ Copyright Mexuar Technologies Ltd";
 
     //private static boolean __audioOk = false;
-    final static int DEPTH = 10;
-    final static int LLBS = 6; // Low level buffer size
+    final static int DEPTH = 16;
+    final static int LLBS = 16; // Low level buffer size
     final static int FRAMEINTERVAL = 20;
     private AudioFormat _stereo8k, _mono8k;
     protected TargetDataLine _targetDataLine;
@@ -73,13 +59,12 @@ public class Audio8k
      * Constructor for the Audio8k object
      */
     public Audio8k() {
-        _mono8k = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
-                                  8000.0F, 16, 1, 2, 8000.0F, true);
-        _stereo8k = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
-                                    8000.0F, 16, 2, 4, 8000.0F, true);
+        _mono8k = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 8000.0F, 16, 1, 2, 8000.0F, true);
+        _stereo8k = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 8000.0F, 16, 2, 4, 8000.0F, true);
         initRingback();
 
         Runnable trec = new Runnable() {
+            @Override
             public void run() {
                 recTick();
             }
@@ -95,6 +80,7 @@ public class Audio8k
         }
 
         Runnable tplay = new Runnable() {
+            @Override
             public void run() {
                 playTick();
             }
@@ -108,6 +94,7 @@ public class Audio8k
         }
 
         Runnable ringer = new Runnable() {
+            @Override
             public void run() {
                 ringDing();
             }
@@ -127,6 +114,7 @@ public class Audio8k
 
     /**
      */
+    @Override
     public void cleanUp() {
         cleanMeUp();
     }
@@ -137,8 +125,7 @@ public class Audio8k
                 long next = 20;
                 if (!_localMode) {
                     next = this.writeBuff();
-                }
-                else {
+                } else {
                     Log.debug("holding packet " + _ofno);
                     next = 20;
                 }
@@ -150,11 +137,10 @@ public class Audio8k
                     next = 20;
                 }
                 Thread.sleep(next);
-                Log.verb("Woke");
+                // Log.verb("Woke");
 
-            }
-            catch (Throwable ex) {
-                Log.debug("Would have stopped"+ ex.getMessage());
+            } catch (Throwable ex) {
+                Log.debug("Would have stopped" + ex.getMessage());
             }
 
         }
@@ -174,12 +160,10 @@ public class Audio8k
                 // Take care of "discontinuous time"
                 if (!audioTime) {
                     audioTime = true;
-                    set = _targetDataLine.getMicrosecondPosition() /
-                        1000;
+                    set = _targetDataLine.getMicrosecondPosition() / 1000;
                     last = point = set;
                 }
-            }
-            else {
+            } else {
                 point = 0;
                 delta = 20; // We are live before TDL
                 set = System.currentTimeMillis(); // For ring cadence
@@ -191,28 +175,21 @@ public class Audio8k
             if (delta > 1) { // Only sleep if it is worth it...
                 try {
                     Thread.sleep(delta);
+                } catch (InterruptedException ie) {
                 }
-                catch (InterruptedException ie) {}
             }
             last = set;
             if (audioTime) {
                 set = _targetDataLine.getMicrosecondPosition() / 1000;
             }
             if (point > 0) {
-                Log.verb("Ticker slept " + delta + " from " + last +
-                         " now " + set);
+                Log.verb("Ticker slept " + delta + " from " + last + " now " + set);
             }
         }
 
     }
 
-    /**
-     * Description of the Method
-     */
-    /*
-     * Added lines to fix:
-     * CORR9 - Clean up resources when applet quits on WinX.
-     */
+
     void cleanMeUp() {
         Thread micThCp = _micTh;
         Thread tickCp = _tick;
@@ -226,15 +203,13 @@ public class Audio8k
         if (tpcp != null) {
             try {
                 tpcp.join();
-            }
-            catch (InterruptedException ex) {
+            } catch (InterruptedException ex) {
             }
         }
         if (rtcp != null) {
             try {
                 rtcp.join();
-            }
-            catch (InterruptedException ex1) {
+            } catch (InterruptedException ex1) {
             }
         }
 
@@ -242,9 +217,8 @@ public class Audio8k
             if (tickCp != null) {
                 tickCp.join();
             }
-        }
-        catch (java.lang.InterruptedException exc) {}
-        finally {
+        } catch (java.lang.InterruptedException exc) {
+        } finally {
             if (_sourceDataLine != null) {
                 if (AudioProperties.closeDataLine()) {
                     _sourceDataLine.close();
@@ -257,9 +231,8 @@ public class Audio8k
             if (micThCp != null) {
                 micThCp.join();
             }
-        }
-        catch (java.lang.InterruptedException exc) {}
-        finally {
+        } catch (java.lang.InterruptedException exc) {
+        } finally {
             if (_targetDataLine != null) {
                 if (AudioProperties.closeDataLine()) {
                     _targetDataLine.close();
@@ -309,13 +282,7 @@ public class Audio8k
 
         for (int i = 0; i < 160; i++) {
 
-            short s = (short) ( (Short.MAX_VALUE / 16)
-                               *
-                               (
-                                   Math.sin(2.0 * Math.PI * rat1 * i)
-                                   *
-                                   Math.sin(4.0 * Math.PI * rat2 * i)
-                               ));
+            short s = (short) ((Short.MAX_VALUE / 16) * (Math.sin(2.0 * Math.PI * rat1 * i) * Math.sin(4.0 * Math.PI * rat2 * i)));
             rbb.putShort(s);
         }
         _ring = rbb.array();
@@ -332,8 +299,7 @@ public class Audio8k
         if (_audioSender != null) {
             try {
                 _audioSender.send();
-            }
-            catch (IOException x) {
+            } catch (IOException x) {
                 Log.warn(x.getMessage());
             }
         }
@@ -351,22 +317,19 @@ public class Audio8k
             if (_providingRingBack) {
                 nap = 0;
                 while (nap < 20) {
-                    boolean inRing = ( (_rc++ % 120) < 40);
+                    boolean inRing = ((_rc++ % 120) < 40);
                     if (inRing) {
                         nap = this.writeDirectIfAvail(_ring);
-                    }
-                    else {
+                    } else {
                         nap = this.writeDirectIfAvail(_silence);
                     }
                 }
-            }
-            else {
+            } else {
                 nap = 100;
             }
             try {
                 Thread.sleep(nap);
-            }
-            catch (InterruptedException ex) {
+            } catch (InterruptedException ex) {
                 ; // who cares
             }
         }
@@ -385,15 +348,12 @@ public class Audio8k
         if (AudioProperties.isStereoRec()) {
             af = this._stereo8k;
             name = "stereo8k";
-        }
-        else {
+        } else {
             af = this._mono8k;
             name = "mono8k";
         }
 
-        int buffsz = (int) Math.round(LLBS * af.getFrameSize() *
-                                      af.getFrameRate() *
-                                      FRAMEINTERVAL / 1000.0);
+        int buffsz = (int) Math.round(LLBS * af.getFrameSize() * af.getFrameRate() * FRAMEINTERVAL / 1000.0);
         // we want to do tricky stuff on the 8k mono stream before
         // play back, so we accept no other sort of line.
         boolean big = AudioProperties.getBigBuff();
@@ -419,17 +379,15 @@ public class Audio8k
      * type to determine the sort ie Target or Source debtxt is only
      * used in debug printouts to set the context.
      *
-     * @param pref String
-     * @param af AudioFormat
-     * @param name String
+     * @param pref    String
+     * @param af      AudioFormat
+     * @param name    String
      * @param sbuffsz int
-     * @param type Class
-     * @param debtxt String
+     * @param type    Class
+     * @param debtxt  String
      * @return DataLine
      */
-    private DataLine seekLine(String pref, AudioFormat af,
-                              String name, int sbuffsz, Class type,
-                              String debtxt) {
+    private DataLine seekLine(String pref, AudioFormat af, String name, int sbuffsz, Class type, String debtxt) {
 
         DataLine line = null;
         DataLine.Info info = new DataLine.Info(type, af);
@@ -447,19 +405,16 @@ public class Audio8k
                             line = (DataLine) preferedMixer.getLine(info);
                             Log.debug("got " + debtxt + " line");
                             break;
-                        }
-                        else {
+                        } else {
                             Log.debug(debtxt + " format not supported");
                         }
                     }
                 }
-            }
-            else {
+            } else {
                 line = (DataLine) AudioSystem.getLine(info);
             }
 
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             Log.warn("unable to get a " + debtxt + " line of type: " + name);
             line = null;
         }
@@ -469,24 +424,22 @@ public class Audio8k
     /**
      * Description of the Method
      *
-     * @param pref Description of Parameter
-     * @param af Description of Parameter
-     * @param name Description of Parameter
+     * @param pref    Description of Parameter
+     * @param af      Description of Parameter
+     * @param name    Description of Parameter
      * @param sbuffsz Description of Parameter
      * @return Description of the Returned Value
      */
-    private TargetDataLine seekTargetLine(String pref, AudioFormat af,
-                                          String name, int sbuffsz) {
+    private TargetDataLine seekTargetLine(String pref, AudioFormat af, String name, int sbuffsz) {
         String debtxt = "recording";
         TargetDataLine line = (TargetDataLine) seekLine(pref, af, name, sbuffsz,
-            TargetDataLine.class, debtxt);
+                TargetDataLine.class, debtxt);
         if (line != null) {
             try {
                 line.open(af, sbuffsz);
                 Log.debug("got a " + debtxt + " line of type: " + name);
                 Log.debug(" buffer size= " + line.getBufferSize());
-            }
-            catch (LineUnavailableException ex) {
+            } catch (LineUnavailableException ex) {
                 Log.warn("unable to get a " + debtxt + " line of type: " + name);
                 line = null;
             }
@@ -497,24 +450,22 @@ public class Audio8k
     /**
      * Description of the Method
      *
-     * @param pref Description of Parameter
-     * @param af Description of Parameter
-     * @param name Description of Parameter
+     * @param pref    Description of Parameter
+     * @param af      Description of Parameter
+     * @param name    Description of Parameter
      * @param sbuffsz Description of Parameter
      * @return Description of the Returned Value
      */
-    private SourceDataLine seekSourceLine(String pref, AudioFormat af,
-                                          String name, int sbuffsz) {
+    private SourceDataLine seekSourceLine(String pref, AudioFormat af, String name, int sbuffsz) {
         String debtxt = "play";
         SourceDataLine line = (SourceDataLine) seekLine(pref, af, name, sbuffsz,
-            SourceDataLine.class, debtxt);
+                SourceDataLine.class, debtxt);
         if (line != null) {
             try {
                 line.open(af, sbuffsz);
                 Log.debug("got a " + debtxt + " line of type: " + name);
                 Log.debug(" buffer size= " + line.getBufferSize());
-            }
-            catch (LineUnavailableException ex) {
+            } catch (LineUnavailableException ex) {
                 Log.warn("unable to get a " + debtxt + " line of type: " + name);
                 line = null;
             }
@@ -532,21 +483,15 @@ public class Audio8k
 
         String pref = AudioProperties.getInputDeviceName();
         boolean big = AudioProperties.getBigBuff();
+           
         /* first make a list of formats we can live with */
-        String names[] = {
-            "mono8k", "mono44k"};
+        String names[] = {"mono8k", "mono44k"};
+
         // the javasound formats associated with them
+        AudioFormat mono44k = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100.0F, 16, 1, 2, 44100.0F, true);
+        AudioFormat[] afsteps = {_mono8k, mono44k};
 
-        AudioFormat mono44k = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED,
-                                              44100.0F, 16, 1, 2, 44100.0F, true);
-        AudioFormat[] afsteps = {
-            _mono8k, mono44k};
-
-        int[] smallbuff = {
-            (int) Math.round(LLBS * _mono8k.getFrameSize() *
-                             _mono8k.getFrameRate() * FRAMEINTERVAL / 1000.0),
-            (int) Math.round(LLBS * mono44k.getFrameSize() *
-                             mono44k.getFrameRate() * FRAMEINTERVAL / 1000.0)};
+        int[] smallbuff = {(int) Math.round(LLBS * _mono8k.getFrameSize() * _mono8k.getFrameRate() * FRAMEINTERVAL / 1000.0), (int) Math.round(LLBS * mono44k.getFrameSize() * mono44k.getFrameRate() * FRAMEINTERVAL / 1000.0)};
         if (AudioProperties.isStereoRec()) {
             names[0] = "stereo8k";
             afsteps[0] = _stereo8k;
@@ -557,15 +502,14 @@ public class Audio8k
         // should tweak based on LLB really.
         int[] bigbuff = smallbuff;
 
-// choose one based on audio properties
+        // choose one based on audio properties
         int[] buff = big ? bigbuff : smallbuff;
 
         int fno = 0;
         // now try and find a device that will do it - and live up to the preferences
         _targetDataLine = null;
         for (; fno < afsteps.length; fno++) {
-            _targetDataLine = seekTargetLine(pref, afsteps[fno], names[fno],
-                                             buff[fno]);
+            _targetDataLine = seekTargetLine(pref, afsteps[fno], names[fno], buff[fno]);
             if (_targetDataLine != null) {
                 break;
             }
@@ -582,8 +526,7 @@ public class Audio8k
             ret = true;
             // _targetDataLine.addLineListener(this);
 
-        }
-        else {
+        } else {
             Log.warn("No audio input device available");
         }
 
@@ -606,11 +549,9 @@ public class Audio8k
                 }
                 ab.setStamp(stamp);
                 ab.setWritten(); // should test for overrun ???
-                Log.verb("put audio data into buffer " + fresh + " " +
-                         ab.getStamp() + "/" + _bcount);
+                Log.verb("put audio data into buffer " + fresh + " " + ab.getStamp() + "/" + _bcount);
                 _bcount++;
-            }
-            else {
+            } else {
                 // Seen at second and subsequent activations, garbage data
                 Log.debug("drop audio data " + stamp);
             }
@@ -621,8 +562,7 @@ public class Audio8k
                 _micSpeakOffsetValid = true;
                 Log.debug("Set micSpeakOffset " + _micSpeakOffset);
             }
-        }
-        catch (Exception x) {
+        } catch (Exception x) {
             Log.warn("Mic Reader thread quitting :" + x.getMessage());
             _micTh = null; // stops us ...
         }
@@ -643,10 +583,10 @@ public class Audio8k
      *
      * @return int
      */
+    @Override
     public int getSampSz() {
         AudioFormat mine = this.getAudioFormat();
-        return (int) (mine.getFrameRate() * mine.getFrameSize() * FRAMEINTERVAL /
-                      1000.0);
+        return (int) (mine.getFrameRate() * mine.getFrameSize() * FRAMEINTERVAL / 1000.0);
     }
 
     /**
@@ -656,8 +596,9 @@ public class Audio8k
      *
      * @param buff byte[]
      * @return long
-     * @exception IOException Description of Exception
+     * @throws IOException Description of Exception
      */
+    @Override
     public long readDirect(byte[] buff) throws IOException {
         int micnext = _micCount % _rbuffs.length;
         int buffCap = (_bcount - _micCount) % _rbuffs.length;
@@ -668,12 +609,11 @@ public class Audio8k
             // This is only for local audio... busy looping seems ok
             try {
                 Thread.sleep(20);
+            } catch (InterruptedException ie) {
             }
-            catch (InterruptedException ie) {}
             buffCap = (_bcount - _micCount) % _rbuffs.length;
         }
-        Log.verb("getting direct audiodata from buffer " + micnext + "/" +
-                 buffCap);
+        Log.verb("getting direct audiodata from buffer " + micnext + "/" + buffCap);
 
         ABuffer ab = _rbuffs[micnext];
         if (ab.isWritten()) {
@@ -681,8 +621,7 @@ public class Audio8k
             resample(ab.getBuff(), buff);
             ab.setRead();
             _micCount++;
-        }
-        else {
+        } else {
             System.arraycopy(this._silence, 0, buff, 0, buff.length);
             Log.debug("No data yet");
             ret = ab.getStamp(); // or should we warn them ??
@@ -697,8 +636,9 @@ public class Audio8k
      *
      * @param buff byte[]
      * @return long
-     * @exception IOException Description of Exception
+     * @throws IOException Description of Exception
      */
+    @Override
     public long readWithTime(byte[] buff) throws IOException {
         int micnext = _micCount % _rbuffs.length;
         int buffCap = (_bcount - _micCount) % _rbuffs.length;
@@ -712,8 +652,7 @@ public class Audio8k
             ab.setRead();
 
             _micCount++;
-        }
-        else {
+        } else {
             System.arraycopy(this._silence, 0, buff, 0, buff.length);
             Log.debug("Sending silence");
             ret = ab.getStamp(); // or should we warn them ??
@@ -732,15 +671,13 @@ public class Audio8k
     void resample(byte[] s, byte[] d) {
         if (s.length == d.length) {
             System.arraycopy(s, 0, d, 0, s.length);
-        }
-        else if (s.length / 2 == d.length) {
+        } else if (s.length / 2 == d.length) {
             // Source is stereo, send left channel
             for (int i = 0; i < d.length / 2; i++) {
                 d[i * 2] = s[i * 4];
                 d[i * 2 + 1] = s[i * 4 + 1];
             }
-        }
-        else {
+        } else {
             // we assume that it is 44k1 stereo 16 bit and down sample
             // nothing clever - no anti alias etc....
 
@@ -779,6 +716,7 @@ public class Audio8k
     /**
      * stop the reccorder - but don't throw it away.
      */
+    @Override
     public void stopRec() {
         _targetDataLine.stop();
         Log.debug("recline Stop");
@@ -793,13 +731,13 @@ public class Audio8k
      * @return Description of the Returned Value
      */
 
+    @Override
     public long startRec() {
         if (_targetDataLine.available() > 0) {
             _targetDataLine.flush();
             Log.debug("flushed recorded data");
             _lastMicTime = Long.MAX_VALUE; // Get rid of spurious samples
-        }
-        else {
+        } else {
             _lastMicTime = 0;
         }
         _targetDataLine.start();
@@ -827,6 +765,7 @@ public class Audio8k
      * The Audio properties have changed so attempt to re connect to a
      * new device
      */
+    @Override
     public void changedProps() {
 
     }
@@ -834,6 +773,7 @@ public class Audio8k
     /**
      * Start the player
      */
+    @Override
     public void startPlay() {
 
         //_sourceDataLine.flush();
@@ -850,6 +790,7 @@ public class Audio8k
     /**
      * Stop the player
      */
+    @Override
     public void stopPlay() {
 
         // reset the buffer
@@ -875,14 +816,15 @@ public class Audio8k
      * play the sample given (getSampSz() bytes) assuming that it's
      * timestamp is long
      *
-     * @param buff byte[]
+     * @param buff      byte[]
      * @param timestamp long
-     * @exception IOException Description of Exception
+     * @throws IOException Description of Exception
      */
 
+    @Override
     public void write(byte[] buff, long timestamp) throws IOException {
 
-        int fno = (int) (timestamp / (this.FRAMEINTERVAL));
+        int fno = (int) (timestamp / (Audio8k.FRAMEINTERVAL));
 
         ABuffer ab = _pbuffs[fno % _pbuffs.length];
         byte nbuff[] = ab.getBuff();
@@ -893,8 +835,7 @@ public class Audio8k
                 nbuff[i * 4 + 2] = buff[i * 2];
                 nbuff[i * 4 + 3] = buff[i * 2 + 1];
             }
-        }
-        else {
+        } else {
             System.arraycopy(buff, 0, nbuff, 0, nbuff.length);
         }
         ab.setWritten();
@@ -915,8 +856,8 @@ public class Audio8k
      */
     void conceal(int n) {
         byte[] target = _pbuffs[n % _pbuffs.length].getBuff();
-        byte[] prev = _pbuffs[ (n - 1) % _pbuffs.length].getBuff();
-        byte[] next = _pbuffs[ (n + 1) % _pbuffs.length].getBuff();
+        byte[] prev = _pbuffs[(n - 1) % _pbuffs.length].getBuff();
+        byte[] next = _pbuffs[(n + 1) % _pbuffs.length].getBuff();
         conceal(target, prev, next);
     }
 
@@ -926,14 +867,14 @@ public class Audio8k
      * surrounding packets and hope it sounds better
      * than silence.
      *
-     * @param targ output buffer
+     * @param targ   output buffer
      * @param before preceeding packet
-     * @param after following packet
+     * @param after  following packet
      */
     void conceal(byte[] targ, byte[] before, byte[] after) {
         for (int i = 0; i < targ.length; i++) {
             // to do... fix for 16 bit etc
-            targ[i] = (byte) ( (0xff) & ( (before[i] >> 1) + (after[i] >> 1)));
+            targ[i] = (byte) ((0xff) & ((before[i] >> 1) + (after[i] >> 1)));
         }
     }
 
@@ -950,8 +891,7 @@ public class Audio8k
         if (top - _nwrite > _pbuffs.length) {
             if (_nwrite == 0) {
                 _nwrite = top;
-            }
-            else {
+            } else {
                 _nwrite = top - _pbuffs.length / 2;
             }
             Log.debug("skipping to " + _nwrite);
@@ -974,12 +914,11 @@ public class Audio8k
                 }
                 startPlay();
                 _first = true;
-            }
-            else {
+            } else {
                 return 20;
             }
         }
-        Log.verb("starting top="+top+" nwrite ="+_nwrite);
+        Log.verb("starting top=" + top + " nwrite =" + _nwrite);
 
         for (; _nwrite <= top; _nwrite++) {
             ABuffer ab = _pbuffs[_nwrite % _pbuffs.length];
@@ -998,7 +937,7 @@ public class Audio8k
                         Log.debug("Running out of sound " + _nwrite);
                         watergate = true;
                     }
-                    if ( (top - _nwrite) >= (_pbuffs.length - 2)) {
+                    if ((top - _nwrite) >= (_pbuffs.length - 2)) {
                         Log.debug("Running out of buffers " + _nwrite);
                         watergate = true;
                     }
@@ -1009,8 +948,7 @@ public class Audio8k
                     if (watergate) {
                         Log.debug("concealing missing data for " + _nwrite);
                         conceal(_nwrite);
-                    }
-                    else {
+                    } else {
                         Log.debug("waiting for missing data for " + _nwrite);
                         break;
                     }
@@ -1020,7 +958,7 @@ public class Audio8k
                 int len = obuff.length;
                 // We do adjustments only if we have a timing reference from mic
                 if (fudgeSynch && _lastMicTime > 0 &&
-                    _lastMicTime != Long.MAX_VALUE) {
+                        _lastMicTime != Long.MAX_VALUE) {
                     // Only one per writeBuff call cause we depend on _lastMicTime
                     fudgeSynch = false;
                     long delta = ab.getStamp() - _lastMicTime;
@@ -1028,8 +966,7 @@ public class Audio8k
                     if (_first) {
                         _odelta = delta;
                         _first = false;
-                    }
-                    else {
+                    } else {
                         // if diff is positive, this means that
                         // the source clock is running faster than the audio clock
                         // so we lop a few bytes off and make a note of the
@@ -1039,17 +976,17 @@ public class Audio8k
                         // so we make up a couple of samples.
                         // and note down the fudge factor.
                         int diff = (int) (delta - _odelta);
-                        int max = (int) Math.round( (LLBS / 2) * FRAMEINTERVAL); // we expect the output buffer to be fullish
+                        int max = (int) Math.round((LLBS / 2) * FRAMEINTERVAL); // we expect the output buffer to be fullish
                         if (Math.abs(diff) > FRAMEINTERVAL) {
                             Log.verb("delta = " + delta + " diff =" + diff);
                         }
 
                         if (diff > max) {
                             start = (diff > (LLBS * FRAMEINTERVAL)) ?
-                                frameSize * 2 : frameSize; // panic ?
+                                    frameSize * 2 : frameSize; // panic ?
                             len -= start;
                             Log.verb("snip - " + start / frameSize +
-                                     " sample(s)");
+                                    " sample(s)");
                             _fudge -= start / frameSize;
                         }
                         if (diff < -1 * FRAMEINTERVAL) {
@@ -1066,22 +1003,21 @@ public class Audio8k
 
                 // Log.verb("Written to " + _sourceDataLine.toString());
                 ab.setRead();
-                Log.verb("took packet " + _nwrite + " dejitter capacity " +
-                         (top - _nwrite));
-            }
-            else {
+                Log.verb("took packet " + _nwrite + " dejitter capacity " + (top - _nwrite));
+            } else {
                 // No place for (more?) data in SDLB
-                Log.verb("looping top="+top+" nwrite ="+_nwrite);
+                Log.verb("looping top=" + top + " nwrite =" + _nwrite);
                 break;
             }
         }
-        long ttd = ( (sz * LLBS / 2) - _sourceDataLine.available()) / 8;
+        long ttd = ((sz * LLBS / 2) - _sourceDataLine.available()) / 8;
         return ttd;
     }
 
     /**
      * played
      * over ridden iin the echocan  version
+     *
      * @param ab ABuffer
      */
     void played(ABuffer ab) {
@@ -1095,71 +1031,18 @@ public class Audio8k
     private void sample(byte[] obuff) {
     }
 
-    /**
-     * A unit test for JUnit
-     *
-     * @exception IOException Description of Exception
-     */
-    void test() throws IOException {
-        long stamp = 0;
-        long astart = 0;
-        boolean first = true;
-        long diff = 0;
-        this.startPlay();
-        this.startRec();
-        byte buff[] = new byte[this.getSampSz()];
-        Log.verb("sample size = " + buff.length);
-        for (int i = 0; i < 1000; i++) {
-            long ts = this.readWithTime(buff);
-            if (first) {
-                first = false;
-                astart = ts;
-            }
-            ts -= astart;
-            diff = ts - stamp;
-            Log.verb("diff = " + diff + " ts= " + ts + " stamp =" + stamp);
-            this.write(buff, stamp);
-            stamp += 20;
-        }
-        Log.debug("total diff =" + diff);
-        this.stopRec();
-        this.stopPlay();
-    }
-
-    /**
-     * Description of the Method
-     *
-     * @param argv Description of Parameter
-     */
-    public static void main(String argv[]) {
-        Log.setLevel(Log.ALL);
-        AudioProperties.loadFromFile("audio.properties");
-        Audio8k a8 = new Audio8k();
-        try {
-            a8.test();
-            try {
-                Thread.sleep(20000);
-            }
-            catch (InterruptedException ex1) {
-            }
-            a8.test();
-        }
-        catch (IOException ex) {
-            Log.debug(ex.getMessage());
-        }
-    }
 
     /**
      * getA8k
      *
      * @return Audio8k
 
-         public static Audio8k getA8k() {
-        if (__instance == null) {
-            __instance = new Audio8k();
-        }
-        return __instance;
-         }
+    public static Audio8k getA8k() {
+    if (__instance == null) {
+    __instance = new Audio8k();
+    }
+    return __instance;
+    }
      */
     /**
      * getA8k
@@ -1167,19 +1050,26 @@ public class Audio8k
      * @param format Integer
      * @return AudioInterface
      */
+    @Override
     public AudioInterface getByFormat(Integer format) {
         AudioInterface ret = null;
         int f = format.intValue();
         switch (f) {
-            case VoiceFrame.ALAW_BIT:
-                ret = new AudioAlaw(this);
-                break;
+
+
             case VoiceFrame.ULAW_BIT:
                 ret = new AudioUlaw(this);
+                break;
+            case VoiceFrame.GSM_BIT:
+                ret = new AudioGSM(this);
                 break;
             case VoiceFrame.LIN16_BIT:
                 ret = this; // amusing no ?
                 break;
+            case VoiceFrame.ALAW_BIT:
+                ret = new AudioAlaw(this);
+                break;
+
             default:
                 Log.warn("Invalid format for Audio " + f);
                 Log.warn("Forced ulaw ");
@@ -1196,23 +1086,30 @@ public class Audio8k
      *
      * @return Description of the Returned Value
      */
+    @Override
     public Integer supportedCodecs() {
-        int sup = VoiceFrame.ALAW_BIT | VoiceFrame.ULAW_BIT | VoiceFrame.LIN16_BIT;
+
+        int sup = VoiceFrame.GSM_BIT | VoiceFrame.ULAW_BIT;
 
         return new Integer(sup);
+
+
     }
 
 // really want to get this from Audio.prefs
+
     /**
-     * Indicate to Asterisk our preferences - removed alaw due to bug
+     * Indicate to Asterisk our preferences
      *
      * @return Description of the Returned Value
      */
+    @Override
     public String codecPrefString() {
         char[] prefs = {
-            VoiceFrame.ULAW_NO,
-            VoiceFrame.LIN16_NO,
-            VoiceFrame.ALAW_NO
+                VoiceFrame.GSM_NO,
+                VoiceFrame.ULAW_NO,
+                VoiceFrame.LIN16_NO,
+                VoiceFrame.ALAW_NO
         };
         String ret = "";
         for (int i = 0; i < prefs.length; i++) {
@@ -1233,6 +1130,7 @@ public class Audio8k
     /**
      * startRinging
      */
+    @Override
     public void startRinging() {
         _providingRingBack = true;
         _sourceDataLine.flush();
@@ -1243,6 +1141,7 @@ public class Audio8k
     /**
      * stopRinging
      */
+    @Override
     public void stopRinging() {
         if (_providingRingBack) {
             _providingRingBack = false;
@@ -1257,13 +1156,15 @@ public class Audio8k
      *
      * @return int
      */
+    @Override
     public int getFormatBit() {
-        return org.asteriskjava.iax.protocol.VoiceFrame.LIN16_BIT;
+        return VoiceFrame.LIN16_BIT;
     }
 
     /**
      * run reads from the microphone when available
      */
+    @Override
     public void run() {
         while (_micTh != null) {
             micRead();
@@ -1275,10 +1176,12 @@ public class Audio8k
      *
      * @param as The new audioSender value
      */
-    public void setAudioSender(org.asteriskjava.iax.protocol.AudioSender as) {
+    @Override
+    public void setAudioSender(AudioSender as) {
         _audioSender = as;
     }
 
+    @Override
     public void playAudioStream(java.io.InputStream in) throws IOException {
         BufferedInputStream buffIn = new BufferedInputStream(in);
         int len = this.getSampSz();
@@ -1293,40 +1196,12 @@ public class Audio8k
 
     }
 
-    public void sampleRecord(SampleListener slis) throws IOException {
-        int len = this.getSampSz();
-        byte[] buff = new byte[len];
-        Log.verb("sample size = " + len);
-        int sample = 0;
-        long ts = 0;
-        long stamp = 0;
-        long start = this.startRec();
-        this.startPlay();
-        Log.debug("sampleRecord: start=" + start);
-        // does about 10 seconds
-        for (int s = 0; s < 50; s++) {
-            sample = 0;
-            for (int i = 0; i < 10; i++) {
-                ts = this.readDirect(buff);
-                this.writeDirect(buff);
-            }
-
-            // just take one value as sample
-            int v = (buff[0] << 8) + (buff[1] & 0xff);
-            sample = Math.abs(v);
-            slis.setSampleValue(sample);
-        }
-        this.stopRec();
-        this.stopPlay();
-        slis.setSampleValue( -1);
-
-    }
-
     /**
      * writeDirect
      *
      * @param buff byte[]
      */
+    @Override
     public void writeDirect(byte[] buff) {
         _sourceDataLine.write(buff, 0, buff.length);
     }
